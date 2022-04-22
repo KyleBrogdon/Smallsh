@@ -5,11 +5,13 @@
 #include <string.h>
 
 
+#define  MAX_LEN      2049 // max length of argument + null terminate
+
 void shell() {
     FILE *input = stdin;
-    char inputBuff[2049];
+    char inputBuff[MAX_LEN];
     // check for input redirecton
-    while (fgets(inputBuff, 2048, input) != NULL);
+    fgets(inputBuff, MAX_LEN, input);
     if (ferror(input)){
         perror("fgets error");
         exit (1);
