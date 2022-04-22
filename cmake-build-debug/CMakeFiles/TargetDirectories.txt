@@ -1,0 +1,3 @@
+/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/cmake-build-debug/CMakeFiles/edit_cache.dir
+/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/cmake-build-debug/CMakeFiles/smallsh.dir
