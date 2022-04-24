@@ -16,6 +16,9 @@ char *commandArgs[MAX_ARG];
 void shell() {
     input = stdin;
     // check for input redirecton
+    //
+    printf(": ");
+    fflush(stdout);
     fgets(inputBuff, MAX_LEN-1, input); // leave room for null terminate
     if (ferror(input)){
         perror("fgets error");
@@ -31,6 +34,14 @@ void shell() {
         parsedInput = strtok(NULL, " ");
         i++;
     }
+    // check for <
+    // check for >
+    // check if last word is &
+    // check for &&
+    // check for #
+    // implement cd
+    // implement exit
+    // implement status
 }
 
 
