@@ -29,18 +29,10 @@ void expandVar(char *command){
     char *insert_point = &buffer[0];
     while(1){
         char *pointer = strstr(tmp, needle);
-        char *remaining[MAX_LEN];
         if (pointer == NULL){
             strcpy(insert_point, tmp);
             break;
         }
-        int y = 0;
-        remaining[0] = &pointer[2];
-//        for (size_t x = strlen(pointer); x > (strlen(pointer) - 2); x--){
-//            remaining[y] = &pointer[1];
-//            y++;
-//        }
-//        tmp = realloc(tmp, (strlen(tmp) + (replace_len - 2)));  //increase size of tmp for expansion
         memcpy(insert_point, tmp, pointer - tmp);
         insert_point += pointer - tmp;
         memcpy(insert_point, str, replace_len+1);
@@ -48,6 +40,7 @@ void expandVar(char *command){
         tmp = pointer + needle_len;
     }
     strcpy(command, buffer);
+    free(str);
 }
 
 void shell() {
@@ -89,6 +82,7 @@ void shell() {
         // implement cd
         // implement exit
         // implement status
+        break;
     }
 }
 
