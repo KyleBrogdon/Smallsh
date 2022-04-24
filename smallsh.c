@@ -16,7 +16,9 @@ char *commandArgs[MAX_ARG];
 
 void expandVar(char *command){
     // convert PID to a string for manipulation, code citation https://stackoverflow.com/questions/5242524/converting-int-to-string-in-c
+    // loop through a string and replace instances of needle, code citation https://stackoverflow.com/questions/32413667/replace-all-occurrences-of-a-substring-in-a-string-in-c
     char *tmp = command;
+    char buffer[MAX_LEN] = {0};
     int pid = getpid();
     int length = snprintf(NULL, 0, "%d", pid);  // find length of pid
     char *str = malloc(length + 1);
@@ -24,11 +26,12 @@ void expandVar(char *command){
     char *needle = "$$";
     size_t needle_len = strlen(needle);
     size_t replace_len = strlen(str);
-    char *insert_point = &tmp[0];
+    char *insert_point = &buffer[0];
     while(1){
         char *pointer = strstr(tmp, needle);
         char *remaining[MAX_LEN];
         if (pointer == NULL){
+            strcpy(insert_point, tmp);
             break;
         }
         int y = 0;
@@ -43,8 +46,8 @@ void expandVar(char *command){
         memcpy(insert_point, str, replace_len+1);
         insert_point += replace_len;
         tmp = pointer + needle_len;
-        memcpy(tmp, remaining, sizeof(remaining)-1);
     }
+    strcpy(command, buffer);
 }
 
 void shell() {
