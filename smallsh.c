@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <string.h>
+#include <signal.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -14,7 +15,9 @@ char *commandArgs[MAX_ARG];
 int numCmds = 0;
 void expandVar(char *command);
 void cd(char *path);
-
+void shellExit();
+int openPid[MAX_LEN] = {0};
+int numProcesses = 1;
 
 
 void expandVar(char *command){
@@ -51,11 +54,17 @@ void cd(char* path){
     return;
 }
 
+void shellExit(){
+    return;
+}
+
+//implement status
+
 void shell() {
     while(1){
         input = stdin;
         // check for input redirecton
-        //
+        openPid[0] = getpid();
         printf(": ");
         fflush(stdout);
         fgets(inputBuff, MAX_LEN-1, input); // leave room for null terminate
@@ -65,6 +74,10 @@ void shell() {
         }
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
         inputBuff[strcspn(inputBuff, "\n")] = 0;
+        if (inputBuff[0] == '#'){
+            memset(inputBuff, 0, sizeof(inputBuff));
+            continue;
+        }
         // check if variable expansion is needed for $$
         if (strstr(inputBuff, "$$")){
             expandVar(inputBuff);
@@ -88,6 +101,11 @@ void shell() {
             }
             else{
                 cd(commandArgs[1]);
+            }
+        }
+        if (strcmp(commandArgs[0], "exit") == 0){
+            for (numProcesses; numProcesses > 0; numProcesses --){
+                kill(openPid[numProcesses-1], SIGKILL);
             }
         }
         // check for <
