@@ -11,6 +11,9 @@ char inputBuff[MAX_LEN];
 FILE *input;
 char *parsedInput;
 char *commandArgs[MAX_ARG];
+int numCmds = 0;
+void expandVar(char *command);
+void cd(char *path);
 
 
 
@@ -22,7 +25,7 @@ void expandVar(char *command){
     int pid = getpid();
     int length = snprintf(NULL, 0, "%d", pid);  // find length of pid
     char *str = malloc(length + 1);
-    snprintf(str, length+1, "%d", pid);  // convert pid to string
+    snprintf(str, length+1, "%d", pid);  // convert pid to string with correct length
     char *needle = "$$";
     size_t needle_len = strlen(needle);
     size_t replace_len = strlen(str);
@@ -42,6 +45,10 @@ void expandVar(char *command){
     buffer[strlen(buffer)] = '\0';
     strncpy(command, buffer, strlen(buffer));
     free(str);
+}
+
+void cd(char* path){
+    return;
 }
 
 void shell() {
@@ -64,11 +71,24 @@ void shell() {
         }
         parsedInput = strtok(inputBuff, " ");
         int i = 0;
-        // split space separated user input into an array holding arguments
+        // split space separated user input into an array of string literals holding each argument
         while (parsedInput != NULL){
             commandArgs[i] = parsedInput;
             parsedInput = strtok(NULL, " ");
             i++;
+            numCmds ++;
+        }
+        if (strcmp(commandArgs[0], "cd") == 0){
+            if (numCmds > 2){
+                perror("invalid number of arguments");
+                exit(1);
+            }
+            else if(numCmds == 1){
+                cd(commandArgs[0]);
+            }
+            else{
+                cd(commandArgs[1]);
+            }
         }
         // check for <
         // check for >
