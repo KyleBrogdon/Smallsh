@@ -14,10 +14,11 @@ char *parsedInput;
 char *commandArgs[MAX_ARG];
 int numCmds = 0;
 void expandVar(char *command);
-void cd(char *path);
-void shellExit();
 int openPid[MAX_LEN] = {0};
 int numProcesses = 1;
+int nonStdProcesses = 0;  // tracks non-built in processes that have been executed since parent shell started
+int terminationStatus = 0; // last termination code
+
 
 
 void expandVar(char *command){
@@ -50,13 +51,6 @@ void expandVar(char *command){
     free(str);
 }
 
-void cd(char* path){
-    return;
-}
-
-void shellExit(){
-    return;
-}
 
 //implement status
 
@@ -74,7 +68,7 @@ void shell() {
         }
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
         inputBuff[strcspn(inputBuff, "\n")] = 0;
-        if (inputBuff[0] == '#'){
+        if (inputBuff[0] == '#' || inputBuff[0] == '\n'){
             memset(inputBuff, 0, sizeof(inputBuff));
             continue;
         }
@@ -91,21 +85,44 @@ void shell() {
             i++;
             numCmds ++;
         }
-        if (strcmp(commandArgs[0], "cd") == 0){
-            if (numCmds > 2){
+        if (strcmp(commandArgs[0], "cd") == 0) {
+            if (numCmds > 2) {
                 perror("invalid number of arguments");
                 exit(1);
-            }
-            else if(numCmds == 1){
-                cd(commandArgs[0]);
-            }
-            else{
-                cd(commandArgs[1]);
+            } else if (numCmds == 1) {
+                char *home = getenv("HOME");
+                if (home == NULL) {
+                    perror("getenv error");
+                    exit(1);
+                }
+                int dir = chdir(home);
+                if (dir != 0) {
+                    perror("chdir error");
+                    exit(1);
+                }
+            } else {
+                int dir = chdir(commandArgs[1]);
+                if (dir != 0) {
+                    perror("chdir error");
+                    exit(1);
+                }
             }
         }
-        if (strcmp(commandArgs[0], "exit") == 0){
-            for (numProcesses; numProcesses > 0; numProcesses --){
-                kill(openPid[numProcesses-1], SIGKILL);
+        // starting from last child process, kill all including parent and exit smallsh
+        if (strcmp(commandArgs[0], "exit") == 0) {
+            for (numProcesses; numProcesses > 0; numProcesses--) {
+                kill(openPid[numProcesses - 1], SIGKILL);
+            }
+        }
+        if (strcmp(commandArgs[0], "status") == 0){
+            if (nonStdProcesses == 0){
+                exit(0);
+            }
+            else{
+                int length = snprintf(NULL, 0, "%d", terminationStatus);  // find length of status
+                char *str = malloc(length + 1);
+                snprintf(str, length+1, "%d", terminationStatus);  // convert status to string with correct length
+                printf("%s", str);
             }
         }
         // check for <
@@ -114,9 +131,6 @@ void shell() {
         // check for &&
         // check for blank input
         // check for #
-        // implement cd
-        // implement exit
-        // implement status
         break;
     }
 }
