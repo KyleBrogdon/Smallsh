@@ -35,11 +35,12 @@ void expandVar(char *command){
         }
         memcpy(insert_point, tmp, pointer - tmp);
         insert_point += pointer - tmp;
-        memcpy(insert_point, str, replace_len+1);
+        memcpy(insert_point, str, replace_len);
         insert_point += replace_len;
         tmp = pointer + needle_len;
     }
-    strcpy(command, buffer);
+    buffer[strlen(buffer)] = '\0';
+    strncpy(command, buffer, strlen(buffer));
     free(str);
 }
 
@@ -57,20 +58,16 @@ void shell() {
         }
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
         inputBuff[strcspn(inputBuff, "\n")] = 0;
+        // check if variable expansion is needed for $$
+        if (strstr(inputBuff, "$$")){
+            expandVar(inputBuff);
+        }
         parsedInput = strtok(inputBuff, " ");
         int i = 0;
         // split space separated user input into an array holding arguments
         while (parsedInput != NULL){
             commandArgs[i] = parsedInput;
             parsedInput = strtok(NULL, " ");
-            i++;
-        }
-        i = 0;
-        // check for $$ for variable expansion
-        while (commandArgs[i] != NULL){
-            if (strstr(commandArgs[i], "$$")){
-                expandVar(commandArgs[i]);
-            }
             i++;
         }
         // check for <
