@@ -27,15 +27,24 @@ void expandVar(char *command){
     char *insert_point = &tmp[0];
     while(1){
         char *pointer = strstr(tmp, needle);
+        char *remaining[MAX_LEN];
         if (pointer == NULL){
-            strcpy(insert_point, tmp);
             break;
         }
-        tmp = realloc(tmp, (strlen(tmp) + (replace_len - 2)));  //increase size of tmp for expansion
-        temp += length;
+        int y = 0;
+        remaining[0] = &pointer[2];
+//        for (size_t x = strlen(pointer); x > (strlen(pointer) - 2); x--){
+//            remaining[y] = &pointer[1];
+//            y++;
+//        }
+//        tmp = realloc(tmp, (strlen(tmp) + (replace_len - 2)));  //increase size of tmp for expansion
+        memcpy(insert_point, tmp, pointer - tmp);
+        insert_point += pointer - tmp;
+        memcpy(insert_point, str, replace_len+1);
+        insert_point += replace_len;
+        tmp = pointer + needle_len;
+        memcpy(tmp, remaining, sizeof(remaining)-1);
     }
-    printf("hi");
-//            free(temp);
 }
 
 void shell() {
@@ -65,9 +74,8 @@ void shell() {
         while (commandArgs[i] != NULL){
             if (strstr(commandArgs[i], "$$")){
                 expandVar(commandArgs[i]);
-                i++;
             }
-
+            i++;
         }
         // check for <
         // check for >
