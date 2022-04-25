@@ -19,4 +19,6 @@ string.h
 -
 signal.h
 -
+sys/wait.h
+-
 

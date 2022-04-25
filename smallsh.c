@@ -4,6 +4,7 @@
 #include <dirent.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -14,12 +15,37 @@ char *parsedInput;
 char *commandArgs[MAX_ARG];
 int numCmds = 0;
 void expandVar(char *command);
+int newChild();
 int openPid[MAX_LEN] = {0};
 int numProcesses = 1;
 int nonStdProcesses = 0;  // tracks non-built in processes that have been executed since parent shell started
 int terminationStatus = 0; // last termination code
 
+int newChild(){
+    pid_t spawnPid = -5;
+    int childStatus;
+    //fork new process
+    spawnPid = fork();
+    switch(spawnPid){
+        case -1:
+            perror("fork error");
+            exit(1);
+            break;
 
+        case 0:
+            openPid[numProcesses] = getpid();
+            numProcesses ++;
+            execvp(commandArgs[0], commandArgs);
+            exit(2);
+            break;
+
+        default:
+            spawnPid = waitpid(spawnPid, &childStatus, 0);
+            exit(0);
+            break;
+    }
+
+}
 
 void expandVar(char *command){
     // convert PID to a string for manipulation, code citation https://stackoverflow.com/questions/5242524/converting-int-to-string-in-c
@@ -137,7 +163,8 @@ void shell() {
 
 
 int main() {
-    shell();
+    shell();  //start smallsh and parse arguments
+    newChild();  // forks a new child process to execute commands
     printf("Hello, World!\n");
     return 0;
 }
