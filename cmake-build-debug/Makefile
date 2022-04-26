@@ -123,32 +123,32 @@ smallsh/fast:
 	$(MAKE) -f CMakeFiles/smallsh.dir/build.make CMakeFiles/smallsh.dir/build
 .PHONY : smallsh/fast
 
-smallsh.o: smallsh.c.o
+main.o: main.c.o
 
-.PHONY : smallsh.o
+.PHONY : main.o
 
 # target to build an object file
-smallsh.c.o:
-	$(MAKE) -f CMakeFiles/smallsh.dir/build.make CMakeFiles/smallsh.dir/smallsh.c.o
-.PHONY : smallsh.c.o
+main.c.o:
+	$(MAKE) -f CMakeFiles/smallsh.dir/build.make CMakeFiles/smallsh.dir/main.c.o
+.PHONY : main.c.o
 
-smallsh.i: smallsh.c.i
+main.i: main.c.i
 
-.PHONY : smallsh.i
+.PHONY : main.i
 
 # target to preprocess a source file
-smallsh.c.i:
-	$(MAKE) -f CMakeFiles/smallsh.dir/build.make CMakeFiles/smallsh.dir/smallsh.c.i
-.PHONY : smallsh.c.i
+main.c.i:
+	$(MAKE) -f CMakeFiles/smallsh.dir/build.make CMakeFiles/smallsh.dir/main.c.i
+.PHONY : main.c.i
 
-smallsh.s: smallsh.c.s
+main.s: main.c.s
 
-.PHONY : smallsh.s
+.PHONY : main.s
 
 # target to generate assembly for a file
-smallsh.c.s:
-	$(MAKE) -f CMakeFiles/smallsh.dir/build.make CMakeFiles/smallsh.dir/smallsh.c.s
-.PHONY : smallsh.c.s
+main.c.s:
+	$(MAKE) -f CMakeFiles/smallsh.dir/build.make CMakeFiles/smallsh.dir/main.c.s
+.PHONY : main.c.s
 
 # Help Target
 help:
@@ -159,9 +159,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... edit_cache"
 	@echo "... smallsh"
-	@echo "... smallsh.o"
-	@echo "... smallsh.i"
-	@echo "... smallsh.s"
+	@echo "... main.o"
+	@echo "... main.i"
+	@echo "... main.s"
 .PHONY : help
 
 

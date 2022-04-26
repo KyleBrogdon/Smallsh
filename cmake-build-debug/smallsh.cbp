@@ -76,7 +76,7 @@
 				</MakeCommands>
 			</Target>
 		</Build>
-		<Unit filename="/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/smallsh.c">
+		<Unit filename="/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/main.c">
 			<Option target="smallsh"/>
 		</Unit>
 		<Unit filename="/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/CMakeLists.txt">

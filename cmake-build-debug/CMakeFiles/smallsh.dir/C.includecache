@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/smallsh.c
+/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/main.c
 stdio.h
 -
 stdlib.h
@@ -21,6 +21,6 @@ signal.h
 -
 sys/wait.h
 -
-errno.h
+sys/types.h
 -
 

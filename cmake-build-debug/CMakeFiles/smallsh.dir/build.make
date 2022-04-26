@@ -57,27 +57,27 @@ include CMakeFiles/smallsh.dir/progress.make
 # Include the compile flags for this target's objects.
 include CMakeFiles/smallsh.dir/flags.make
 
-CMakeFiles/smallsh.dir/smallsh.c.o: CMakeFiles/smallsh.dir/flags.make
-CMakeFiles/smallsh.dir/smallsh.c.o: ../smallsh.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir="/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/cmake-build-debug/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/smallsh.dir/smallsh.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/smallsh.dir/smallsh.c.o   -c "/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/smallsh.c"
+CMakeFiles/smallsh.dir/main.c.o: CMakeFiles/smallsh.dir/flags.make
+CMakeFiles/smallsh.dir/main.c.o: ../main.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir="/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/cmake-build-debug/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/smallsh.dir/main.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/smallsh.dir/main.c.o   -c "/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/main.c"
 
-CMakeFiles/smallsh.dir/smallsh.c.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/smallsh.dir/smallsh.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/smallsh.c" > CMakeFiles/smallsh.dir/smallsh.c.i
+CMakeFiles/smallsh.dir/main.c.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/smallsh.dir/main.c.i"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/main.c" > CMakeFiles/smallsh.dir/main.c.i
 
-CMakeFiles/smallsh.dir/smallsh.c.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/smallsh.dir/smallsh.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/smallsh.c" -o CMakeFiles/smallsh.dir/smallsh.c.s
+CMakeFiles/smallsh.dir/main.c.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/smallsh.dir/main.c.s"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/main.c" -o CMakeFiles/smallsh.dir/main.c.s
 
 # Object files for target smallsh
 smallsh_OBJECTS = \
-"CMakeFiles/smallsh.dir/smallsh.c.o"
+"CMakeFiles/smallsh.dir/main.c.o"
 
 # External object files for target smallsh
 smallsh_EXTERNAL_OBJECTS =
 
-smallsh: CMakeFiles/smallsh.dir/smallsh.c.o
+smallsh: CMakeFiles/smallsh.dir/main.c.o
 smallsh: CMakeFiles/smallsh.dir/build.make
 smallsh: CMakeFiles/smallsh.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir="/mnt/c/Users/kbrog/OneDrive/Documents/OREGON_STATE/CS 344/smallsh/cmake-build-debug/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Linking C executable smallsh"

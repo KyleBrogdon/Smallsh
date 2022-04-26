@@ -3,4 +3,4 @@ project(smallsh C)
 
 set(CMAKE_C_STANDARD 99)
 
-add_executable(smallsh smallsh.c)
+add_executable(smallsh main.c)
