@@ -5,6 +5,7 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <errno.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -20,6 +21,7 @@ int openPid[MAX_LEN] = {0};
 int numProcesses = 1;
 int nonStdProcesses = 0;  // tracks non-built in processes that have been executed since parent shell started
 int terminationStatus = 0; // last termination code
+
 
 int newChild(){
     pid_t spawnPid = -5;
@@ -41,6 +43,12 @@ int newChild(){
 
         default:
             spawnPid = waitpid(spawnPid, &childStatus, 0);
+            if (WIFEXITED(childStatus)){
+                terminationStatus = WEXITSTATUS(childStatus);
+            }
+            else{
+                terminationStatus = WTERMSIG(childStatus);
+            }
             exit(0);
             break;
     }
@@ -122,6 +130,7 @@ void shell() {
                     exit(1);
                 }
                 int dir = chdir(home);
+
                 if (dir != 0) {
                     perror("chdir error");
                     exit(1);
@@ -135,12 +144,12 @@ void shell() {
             }
         }
         // starting from last child process, kill all including parent and exit smallsh
-        if (strcmp(commandArgs[0], "exit") == 0) {
+        else if (strcmp(commandArgs[0], "exit") == 0) {
             for (numProcesses; numProcesses > 0; numProcesses--) {
                 kill(openPid[numProcesses - 1], SIGKILL);
             }
         }
-        if (strcmp(commandArgs[0], "status") == 0){
+        else if (strcmp(commandArgs[0], "status") == 0){
             if (nonStdProcesses == 0){
                 exit(0);
             }
@@ -151,13 +160,15 @@ void shell() {
                 printf("%s", str);
             }
         }
+        else{
+            break;
+        }
         // check for <
         // check for >
         // check if last word is &
         // check for &&
         // check for blank input
         // check for #
-        break;
     }
 }
 
@@ -166,5 +177,6 @@ int main() {
     shell();  //start smallsh and parse arguments
     newChild();  // forks a new child process to execute commands
     printf("Hello, World!\n");
-    return 0;
+    EXIT:
+        return 0;
 }
