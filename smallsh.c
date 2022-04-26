@@ -19,7 +19,7 @@ void expandVar(char *command);
 int newChild();
 int openPid[MAX_LEN] = {0};
 int numProcesses = 1;
-int nonStdProcesses = 0;  // tracks non-built in processes that have been executed since parent shell started
+int backgroundCommands = 0;  // tracks non-built in processes that have been executed since parent shell started
 int terminationStatus = 0; // last termination code
 
 
@@ -32,15 +32,16 @@ int newChild(){
         case -1:
             perror("fork error");
             exit(1);
-            break;
-
         case 0:
             openPid[numProcesses] = getpid();
             numProcesses ++;
-            execvp(commandArgs[0], commandArgs);
-            exit(2);
-            break;
-
+            if (execvp(commandArgs[0], commandArgs) == -1){
+                perror("execvp command error");
+                exit(1);
+            }
+            else {
+                exit(0);
+            }
         default:
             spawnPid = waitpid(spawnPid, &childStatus, 0);
             if (WIFEXITED(childStatus)){
@@ -50,7 +51,6 @@ int newChild(){
                 terminationStatus = WTERMSIG(childStatus);
             }
             exit(0);
-            break;
     }
 
 }
@@ -150,7 +150,7 @@ void shell() {
             }
         }
         else if (strcmp(commandArgs[0], "status") == 0){
-            if (nonStdProcesses == 0){
+            if (backgroundCommands == 0){
                 exit(0);
             }
             else{
@@ -165,8 +165,7 @@ void shell() {
         }
         // check for <
         // check for >
-        // check if last word is &
-        // check for &&
+        // check if last letter is &
         // check for blank input
         // check for #
     }
