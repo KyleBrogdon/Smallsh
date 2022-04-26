@@ -1,3 +1,4 @@
+#define kill(): _POSIX_C_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -5,7 +6,7 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <errno.h>
+#include <sys/types.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -145,7 +146,7 @@ void shell() {
         }
         // starting from last child process, kill all including parent and exit smallsh
         else if (strcmp(commandArgs[0], "exit") == 0) {
-            for (numProcesses; numProcesses > 0; numProcesses--) {
+            for (; numProcesses > 0; numProcesses--) {
                 kill(openPid[numProcesses - 1], SIGKILL);
             }
         }
@@ -176,6 +177,5 @@ int main() {
     shell();  //start smallsh and parse arguments
     newChild();  // forks a new child process to execute commands
     printf("Hello, World!\n");
-    EXIT:
-        return 0;
+    return 0;
 }
