@@ -17,14 +17,20 @@ char *parsedInput;
 char *commandArgs[MAX_ARG];
 int numCmds = 0;
 void expandVar(char *command);
-int newChild();
+void newChild();
 int openPid[MAX_LEN] = {0};
 int numProcesses = 1;
 int backgroundCommands = 0;  // tracks non-built in processes that have been executed since parent shell started
 int terminationStatus = 0; // last termination code
 
 
-int newChild(){
+void newChild(){
+    char *argsToRun[numCmds+1];
+    for(size_t i = 0; i < numCmds+1; i++){
+        argsToRun[i] = commandArgs[i];
+    }
+    numCmds = 0;
+    memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer in case this is a background process
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
@@ -36,7 +42,7 @@ int newChild(){
         case 0:
             openPid[numProcesses] = getpid();
             numProcesses ++;
-            if (execvp(commandArgs[0], commandArgs) == -1){
+            if (execvp(argsToRun[0], argsToRun) == -1){
                 perror("execvp command error");
                 exit(1);
             }
@@ -51,7 +57,7 @@ int newChild(){
             else{
                 terminationStatus = WTERMSIG(childStatus);
             }
-            exit(0);
+            break;
     }
 
 }
@@ -121,7 +127,7 @@ void shell() {
             numCmds ++;
         }
         if (strcmp(commandArgs[0], "cd") == 0) {
-            if (numCmds > 2) {
+            if (numCmds> 2) {
                 perror("invalid number of arguments");
                 exit(1);
             } else if (numCmds == 1) {
@@ -162,7 +168,7 @@ void shell() {
             }
         }
         else{
-            break;
+            newChild();  // forks a new child process to execute commands
         }
         // check for <
         // check for >
@@ -175,7 +181,6 @@ void shell() {
 
 int main() {
     shell();  //start smallsh and parse arguments
-    newChild();  // forks a new child process to execute commands
     printf("Hello, World!\n");
     return 0;
 }
