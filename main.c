@@ -8,6 +8,9 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <err.h>
+#include <sys/stat.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -28,6 +31,20 @@ int outputFlag = 0;
 char *outputFileName = "\0";
 char *inputFileName = "\0";
 
+char *
+getcwd_a(void)
+{
+    char *pwd = NULL;
+    for (size_t sz = 128;; sz *= 2)
+    {
+        pwd = realloc(pwd, sz);
+        if (getcwd(pwd, sz)) break;
+        if (errno != ERANGE) err(errno, "getcwd()");
+    }
+    return pwd;
+}
+
+
 
 void newChild(){
     char *argsToRun[numCmds+1];
@@ -39,7 +56,9 @@ void newChild(){
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
+    char *swd = getcwd_a();
     spawnPid = fork();
+    char *twd = getcwd_a();
     switch(spawnPid){
         case -1:
             perror("fork error");
@@ -47,12 +66,19 @@ void newChild(){
         case 0:
             openPid[numProcesses] = getpid();
             numProcesses ++;
+            struct stat st;
             char *localInputName = inputFileName;
             char *localOutputName = outputFileName;
             outputFileName = "\0";
             inputFileName = "\0";
             if (strcmp(localInputName, "\0") !=0){ //need to open input file for input redirection
                 // open source file
+                if (stat(localInputName, &st)){
+                    perror("stat error");
+                    exit(1);
+                }
+                char *cwd = getcwd_a();
+                chdir(localInputName);
                 int sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1){
                     perror("source open()");
@@ -79,6 +105,7 @@ void newChild(){
                     exit(1);
                 }
             }
+            char *pwd = getcwd_a();
             if (execvp(argsToRun[0], argsToRun) == -1){
                 fflush(stdout);
                 perror("execvp");
@@ -87,9 +114,13 @@ void newChild(){
                 exit(1);
             }
             else {
+//                if (strcmp(localOutputName, "\0") !=0){
+//                    close(1);
+//                }
                 exit(0);
             }
         default:
+            pwd = getcwd_a();
             spawnPid = waitpid(spawnPid, &childStatus, 0);
             openPid[numProcesses] = '\0';
             numProcesses --;
@@ -172,20 +203,24 @@ void shell() {
         int i = 0;
         // split space separated user input into an array of string literals holding each argument
         while (parsedInput != NULL){
+            if (strcmp(parsedInput, "<") == 0){
+                inputFlag ++;
+                parsedInput = strtok(NULL, " ");
+                continue;
+            }
+            if (strcmp(parsedInput, ">") == 0){
+                outputFlag ++;
+                parsedInput = strtok(NULL, " ");
+                continue;
+            }
             commandArgs[i] = parsedInput;
             if (inputFlag != 0){
                 inputFileName = commandArgs[i];
                 inputFlag = 0;
             }
-            if (strcmp(commandArgs[i], "<") == 0){
-                inputFlag ++;
-            }
             if (outputFlag != 0){
                 outputFileName = commandArgs[i];
                 outputFlag = 0;
-            }
-            if (strcmp(commandArgs[i], "<") == 0){
-                outputFlag ++;
             }
             parsedInput = strtok(NULL, " ");
             i++;
@@ -245,6 +280,7 @@ void shell() {
 
 
 int main() {
+    char *twd = getcwd_a();
     shell();  //start smallsh and parse arguments
     printf("Hello, World!\n");
     return 0;

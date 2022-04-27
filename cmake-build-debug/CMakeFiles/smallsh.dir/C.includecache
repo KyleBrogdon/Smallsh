@@ -23,4 +23,10 @@ sys/wait.h
 -
 sys/types.h
 -
+fcntl.h
+-
+errno.h
+-
+err.h
+-
 
