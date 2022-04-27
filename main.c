@@ -65,8 +65,6 @@ void newChild(){
             }
             else{
                 terminationStatus = WTERMSIG(childStatus);
-                fflush(stdout);
-                perror("abnormal child termination");
             }
             break;
     }
@@ -173,7 +171,7 @@ void shell() {
         }
         else if (strcmp(commandArgs[0], "status") == 0){
             if (backgroundCommands == 0){
-                exit(0);
+                continue;
             }
             else{
                 int length = snprintf(NULL, 0, "%d", terminationStatus);  // find length of status
