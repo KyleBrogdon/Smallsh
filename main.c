@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <fcntl.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -22,6 +23,10 @@ int openPid[MAX_LEN] = {0};
 int numProcesses = 1;
 int backgroundCommands = 0;  // tracks non-built in processes that have been executed since parent shell started
 int terminationStatus = 0; // last termination code
+int inputFlag = 0;
+int outputFlag = 0;
+char *outputFileName = "\0";
+char *inputFileName = "\0";
 
 
 void newChild(){
@@ -42,6 +47,38 @@ void newChild(){
         case 0:
             openPid[numProcesses] = getpid();
             numProcesses ++;
+            char *localInputName = inputFileName;
+            char *localOutputName = outputFileName;
+            outputFileName = "\0";
+            inputFileName = "\0";
+            if (strcmp(localInputName, "\0") !=0){ //need to open input file for input redirection
+                // open source file
+                int sourceFD = open(localInputName, O_RDONLY);
+                if (sourceFD == -1){
+                    perror("source open()");
+                    exit(1);
+                }
+                // redirect stdin to source
+                int result = dup2(sourceFD, 0);
+                if (result == -1){
+                    perror("source dup2()");
+                    exit(1);
+                }
+            }
+            if (strcmp(localOutputName, "\0") !=0){ //need to open output file for output redirection
+                // open target file
+                int targetfd = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (targetfd == -1){
+                    perror("target open()");
+                    exit(1);
+                }
+                //redirect stdout to target
+                int result = dup2(targetfd, 1);
+                if (result == -1){
+                    perror("target dup2()");
+                    exit(1);
+                }
+            }
             if (execvp(argsToRun[0], argsToRun) == -1){
                 fflush(stdout);
                 perror("execvp");
@@ -54,6 +91,7 @@ void newChild(){
             }
         default:
             spawnPid = waitpid(spawnPid, &childStatus, 0);
+            openPid[numProcesses] = '\0';
             numProcesses --;
             if (WIFEXITED(childStatus)){
                 terminationStatus = WEXITSTATUS(childStatus);
@@ -135,6 +173,20 @@ void shell() {
         // split space separated user input into an array of string literals holding each argument
         while (parsedInput != NULL){
             commandArgs[i] = parsedInput;
+            if (inputFlag != 0){
+                inputFileName = commandArgs[i];
+                inputFlag = 0;
+            }
+            if (strcmp(commandArgs[i], "<") == 0){
+                inputFlag ++;
+            }
+            if (outputFlag != 0){
+                outputFileName = commandArgs[i];
+                outputFlag = 0;
+            }
+            if (strcmp(commandArgs[i], "<") == 0){
+                outputFlag ++;
+            }
             parsedInput = strtok(NULL, " ");
             i++;
             numCmds ++;
