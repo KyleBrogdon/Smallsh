@@ -56,9 +56,7 @@ void newChild(){
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
-    char *swd = getcwd_a();
     spawnPid = fork();
-    char *twd = getcwd_a();
     switch(spawnPid){
         case -1:
             perror("fork error");
@@ -66,19 +64,12 @@ void newChild(){
         case 0:
             openPid[numProcesses] = getpid();
             numProcesses ++;
-            struct stat st;
             char *localInputName = inputFileName;
             char *localOutputName = outputFileName;
             outputFileName = "\0";
             inputFileName = "\0";
             if (strcmp(localInputName, "\0") !=0){ //need to open input file for input redirection
                 // open source file
-                if (stat(localInputName, &st)){
-                    perror("stat error");
-                    exit(1);
-                }
-                char *cwd = getcwd_a();
-                chdir(localInputName);
                 int sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1){
                     perror("source open()");
@@ -213,15 +204,19 @@ void shell() {
                 parsedInput = strtok(NULL, " ");
                 continue;
             }
-            commandArgs[i] = parsedInput;
             if (inputFlag != 0){
-                inputFileName = commandArgs[i];
+                inputFileName = parsedInput;
                 inputFlag = 0;
+                parsedInput = strtok(NULL, " ");
+                continue;
             }
             if (outputFlag != 0){
-                outputFileName = commandArgs[i];
+                outputFileName = parsedInput;
                 outputFlag = 0;
+                parsedInput = strtok(NULL, " ");
+                continue;
             }
+            commandArgs[i] = parsedInput;
             parsedInput = strtok(NULL, " ");
             i++;
             numCmds ++;
