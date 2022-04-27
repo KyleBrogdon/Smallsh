@@ -43,8 +43,8 @@ void newChild(){
             openPid[numProcesses] = getpid();
             numProcesses ++;
             if (execvp(argsToRun[0], argsToRun) == -1){
-//                fflush(stdout);
-//                perror("");
+                fflush(stdout);
+                perror("execvp");
 //                fprintf(stderr, "Error executing command");
 //                fflush(stdout);
                 exit(1);
@@ -57,16 +57,16 @@ void newChild(){
             numProcesses --;
             if (WIFEXITED(childStatus)){
                 terminationStatus = WEXITSTATUS(childStatus);
-                if (terminationStatus != 0){
-                    fprintf(stderr, "Error");
-                    fflush(stdout);
-                    exit(1);
-                }
+//                if (terminationStatus != 0){
+//                    fprintf(stderr, "abnormal child termination");
+//                    fflush(stdout);
+//                    exit(1);
+//                }
             }
             else{
                 terminationStatus = WTERMSIG(childStatus);
                 fflush(stdout);
-                perror("error");
+                perror("abnormal child termination");
             }
             break;
     }
