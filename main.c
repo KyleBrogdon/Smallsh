@@ -43,7 +43,10 @@ void newChild(){
             openPid[numProcesses] = getpid();
             numProcesses ++;
             if (execvp(argsToRun[0], argsToRun) == -1){
-                perror("execvp command error");
+//                fflush(stdout);
+//                perror("");
+//                fprintf(stderr, "Error executing command");
+//                fflush(stdout);
                 exit(1);
             }
             else {
@@ -51,11 +54,19 @@ void newChild(){
             }
         default:
             spawnPid = waitpid(spawnPid, &childStatus, 0);
+            numProcesses --;
             if (WIFEXITED(childStatus)){
                 terminationStatus = WEXITSTATUS(childStatus);
+                if (terminationStatus != 0){
+                    fprintf(stderr, "Error");
+                    fflush(stdout);
+                    exit(1);
+                }
             }
             else{
                 terminationStatus = WTERMSIG(childStatus);
+                fflush(stdout);
+                perror("error");
             }
             break;
     }
@@ -102,7 +113,7 @@ void shell() {
         openPid[0] = getpid();
         printf(": ");
         fflush(stdout);
-        if(strcmp(fgets(inputBuff, MAX_LEN-1, input) , "\n") == 0 || (fgets(inputBuff, MAX_LEN-1, input))  == NULL){  //-1 leaves room for null terminator
+        if(strcmp(fgets(inputBuff, MAX_LEN-1, input) , "\n") == 0){  //-1 leaves room for null terminator
             if (ferror(input)) {
                 perror("fgets error");
                 exit(1);
