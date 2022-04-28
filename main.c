@@ -1,4 +1,5 @@
 #define _POSIX_SOURCE
+#define  _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,7 +14,6 @@
 #define  MAX_LEN      2048 // max length of user commands
 #define  MAX_ARG      512 // max # of arguments
 FILE *input;
-char *parsedInput;
 char *commandArgs[MAX_ARG];
 int numCmds = 0;
 void expandVar(char *command);
@@ -26,8 +26,6 @@ int inputFlag = 0;
 int outputFlag = 0;
 char *outputFileName = "\0";
 char *inputFileName = "\0";
-char inputBuff[MAX_LEN];
-
 
 
 
@@ -37,25 +35,27 @@ void newChild(){
     int targetFD;
     int result;
     int result2;
-    for(int i = 0; i < numCmds+1; i++){
+    for(int i = 0; i < numCmds+1; i++){  // create a copy of the arguments we need to run
         argsToRun[i] = commandArgs[i];
     }
-    numCmds = 0;
+    numCmds = 0;  // reset number of commands counter
     memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer in case this is a background process
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
     spawnPid = fork();
+    if(spawnPid > 0){
+        numProcesses ++;
+        openPid[numProcesses-1] = spawnPid;
+    }
     switch(spawnPid){
         case -1:
             perror("fork error");
             exit(1);
         case 0:
-            openPid[numProcesses] = getpid();
-            numProcesses ++;
+            outputFileName = "\0";
             char *localInputName = inputFileName;
             char *localOutputName = outputFileName;
-            outputFileName = "\0";
             inputFileName = "\0";
             if (strcmp(localInputName, "\0") !=0){ //need to open input file for input redirection
                 // open source file
@@ -63,38 +63,39 @@ void newChild(){
                 sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1){
                     perror("source open()");
-                    fflush(stdout);
+                    fflush(stderr);
                     exit(1);
                 }
                 // redirect stdin to source
                 result = dup2(sourceFD, 0);
                 if (result == -1){
                     perror("source dup2()");
-                    fflush(stdout);
+                    fflush(stderr);
                     exit(1);
                 }
 //                close(sourceFD);
             }
             if (strcmp(localOutputName, "\0") !=0){ //need to open output file for output redirection
                 // open target file
+                fflush(stdout);
                 targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                 if (targetFD == -1){
                     perror("target open()");
-                    fflush(stdout);
+                    fflush(stderr);
                     exit(1);
                 }
                 //redirect stdout to target
                 result2 = dup2(targetFD, 1);
                 if (result2 == -1){
                     perror("target dup2()");
-                    fflush(stdout);
+                    fflush(stderr);
                     exit(1);
                 }
 //                close(targetFD);
             }
             if (execvp(argsToRun[0], argsToRun) == -1){
                 perror("execvp");
-                fflush(stdout);
+                fflush(stderr);
                 exit(1);
             }
             else {
@@ -105,7 +106,7 @@ void newChild(){
             spawnPid = waitpid(spawnPid, &childStatus, 0);
             outputFileName = "\0";
             inputFileName = "\0";
-            openPid[numProcesses] = '\0';
+            openPid[numProcesses-1] = '\0';
             numProcesses --;
             if (WIFEXITED(childStatus)){
                 terminationStatus = WEXITSTATUS(childStatus);
@@ -164,12 +165,12 @@ void expandVar(char *command){
 
 void shell() {
     while(1){
-        memset(inputBuff, 0, sizeof(inputBuff));
-        // check for input redirecton
+        char *inputBuff = NULL;
+        size_t len = 0;
         openPid[0] = getpid();
         printf(": ");
         fflush(stdout);
-        if(fgets(inputBuff, MAX_LEN, stdin) == NULL){
+        if(getline(&inputBuff, &len, stdin) == -1){
             if (ferror(stdin)) {
                 perror("fgets error");
                 exit(1);
@@ -180,16 +181,18 @@ void shell() {
                 continue;
             }
         }
+        inputBuff[strcspn(inputBuff, "\n")] = 0;
+        char *temp;
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
-        if (inputBuff[0] == '#' || inputBuff[0] == '\n'){
-            memset(inputBuff, 0, sizeof(inputBuff));
+        if (strcmp(inputBuff[0], "#") == 0 || strcmp(inputBuff, "\n") == 0){
+            free(inputBuff);
             continue;
         }
-        inputBuff[strcspn(inputBuff, "\n")] = 0;
         // check if variable expansion is needed for $$
         if (strstr(inputBuff, "$$")){
             expandVar(inputBuff);
         }
+        char *parsedInput;
         parsedInput = strtok(inputBuff, " ");
         int i = 0;
         // split space separated user input into an array of string literals holding each argument
@@ -270,8 +273,7 @@ void shell() {
         // check for <
         // check for >
         // check if last letter is &
-        // check for blank input
-        // check for #
+        free(inputBuff);
     }
 }
 
