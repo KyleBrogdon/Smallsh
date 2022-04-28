@@ -32,6 +32,10 @@ char *inputFileName = "\0";
 
 void newChild(){
     char *argsToRun[numCmds+1];
+    int sourceFD;
+    int targetFD;
+    int result;
+    int result2;
     for(int i = 0; i < numCmds+1; i++){
         argsToRun[i] = commandArgs[i];
     }
@@ -54,13 +58,13 @@ void newChild(){
             inputFileName = "\0";
             if (strcmp(localInputName, "\0") !=0){ //need to open input file for input redirection
                 // open source file
-                int sourceFD = open(localInputName, O_RDONLY);
+                sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1){
                     perror("source open()");
                     exit(1);
                 }
                 // redirect stdin to source
-                int result = dup2(sourceFD, 0);
+                result = dup2(sourceFD, 0);
                 if (result == -1){
                     perror("source dup2()");
                     exit(1);
@@ -68,14 +72,14 @@ void newChild(){
             }
             if (strcmp(localOutputName, "\0") !=0){ //need to open output file for output redirection
                 // open target file
-                int targetfd = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if (targetfd == -1){
+                targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                if (targetFD == -1){
                     perror("target open()");
                     exit(1);
                 }
                 //redirect stdout to target
-                int result = dup2(targetfd, 1);
-                if (result == -1){
+                result2 = dup2(targetFD, 1);
+                if (result2 == -1){
                     perror("target dup2()");
                     exit(1);
                 }
@@ -85,12 +89,16 @@ void newChild(){
                 perror("execvp");
 //                fprintf(stderr, "Error executing command");
 //                fflush(stdout);
+                close(targetFD);
+                close(sourceFD);
                 exit(1);
             }
             else {
 //                if (strcmp(localOutputName, "\0") !=0){
 //                    close(1);
 //                }
+                close(targetFD);
+                close(sourceFD);
                 exit(0);
             }
         default:
