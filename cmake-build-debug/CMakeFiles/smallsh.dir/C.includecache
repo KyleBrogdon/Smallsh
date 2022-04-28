@@ -25,10 +25,4 @@ sys/types.h
 -
 fcntl.h
 -
-errno.h
--
-err.h
--
-sys/stat.h
--
 

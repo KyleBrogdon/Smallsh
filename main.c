@@ -8,9 +8,6 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <errno.h>
-#include <err.h>
-#include <sys/stat.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -30,19 +27,6 @@ int inputFlag = 0;
 int outputFlag = 0;
 char *outputFileName = "\0";
 char *inputFileName = "\0";
-
-char *
-getcwd_a(void)
-{
-    char *pwd = NULL;
-    for (size_t sz = 128;; sz *= 2)
-    {
-        pwd = realloc(pwd, sz);
-        if (getcwd(pwd, sz)) break;
-        if (errno != ERANGE) err(errno, "getcwd()");
-    }
-    return pwd;
-}
 
 
 
@@ -96,7 +80,6 @@ void newChild(){
                     exit(1);
                 }
             }
-            char *pwd = getcwd_a();
             if (execvp(argsToRun[0], argsToRun) == -1){
                 fflush(stdout);
                 perror("execvp");
@@ -111,7 +94,6 @@ void newChild(){
                 exit(0);
             }
         default:
-            pwd = getcwd_a();
             spawnPid = waitpid(spawnPid, &childStatus, 0);
             openPid[numProcesses] = '\0';
             numProcesses --;
@@ -208,7 +190,9 @@ void shell() {
                 inputFileName = parsedInput;
                 inputFlag = 0;
                 parsedInput = strtok(NULL, " ");
-                continue;
+                if (outputFlag == 0) {  // if only input redirection and no output redirection
+                    continue;
+                }
             }
             if (outputFlag != 0){
                 outputFileName = parsedInput;
@@ -275,7 +259,6 @@ void shell() {
 
 
 int main() {
-    char *twd = getcwd_a();
     shell();  //start smallsh and parse arguments
     printf("Hello, World!\n");
     return 0;
