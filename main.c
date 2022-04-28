@@ -164,26 +164,29 @@ void expandVar(char *command){
 
 void shell() {
     while(1){
+        memset(inputBuff, 0, sizeof(inputBuff));
         input = stdin;
         // check for input redirecton
         openPid[0] = getpid();
         printf(": ");
         fflush(stdout);
-        if(strcmp(fgets(inputBuff, MAX_LEN-1, input) , "\n") == 0){  //-1 leaves room for null terminator
+        if(fgets(inputBuff, MAX_LEN-1, input) == NULL){  //-1 leaves room for null terminator
             if (ferror(input)) {
                 perror("fgets error");
                 exit(1);
+            }
+            if (feof(input)){
             }
             else {
                 continue;
             }
             }
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
-        inputBuff[strcspn(inputBuff, "\n")] = 0;
         if (inputBuff[0] == '#' || inputBuff[0] == '\n'){
             memset(inputBuff, 0, sizeof(inputBuff));
             continue;
         }
+        inputBuff[strcspn(inputBuff, "\n")] = 0;
         // check if variable expansion is needed for $$
         if (strstr(inputBuff, "$$")){
             expandVar(inputBuff);
