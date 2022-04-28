@@ -97,6 +97,7 @@ void newChild(){
 //                if (strcmp(localOutputName, "\0") !=0){
 //                    close(1);
 //                }
+                fflush(stdout);
                 close(targetFD);
                 close(sourceFD);
                 exit(0);
