@@ -1,7 +1,11 @@
+.
+..
+.cmake
 CMakeCache.txt
 CMakeFiles
 Makefile
 Testing
+build.ninja
 cmake_install.cmake
 coverage
 junk

@@ -1,5 +1,4 @@
 #define _POSIX_SOURCE
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -13,7 +12,6 @@
 
 #define  MAX_LEN      2048 // max length of user commands
 #define  MAX_ARG      512 // max # of arguments
-char inputBuff[MAX_LEN];
 FILE *input;
 char *parsedInput;
 char *commandArgs[MAX_ARG];
@@ -28,6 +26,7 @@ int inputFlag = 0;
 int outputFlag = 0;
 char *outputFileName = "\0";
 char *inputFileName = "\0";
+char inputBuff[MAX_LEN];
 
 
 
@@ -166,41 +165,32 @@ void expandVar(char *command){
 void shell() {
     while(1){
         memset(inputBuff, 0, sizeof(inputBuff));
-        input = stdin;
         // check for input redirecton
         openPid[0] = getpid();
         printf(": ");
         fflush(stdout);
-        char *userInput = NULL;
-        size_t size;
-        if (getline(&userInput, &size, input)== -1){
-            perror("get line");
-            fflush(stderr);
+        if(fgets(inputBuff, MAX_LEN, stdin) == NULL){
+            if (ferror(stdin)) {
+                perror("fgets error");
+                exit(1);
+            }
+            if (feof(stdin)){
+            }
+            else {
+                continue;
+            }
         }
-//        if(fgets(inputBuff, MAX_LEN-1, input) == NULL){  //-1 leaves room for null terminator
-//            if (ferror(input)) {
-//                perror("fgets error");
-//                exit(1);
-//            }
-//            if (feof(input)){
-//            }
-//            else {
-//                continue;
-//            }
-//            }
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
-        if (userInput[0] == '#' || userInput[0] == '\n'){
-//            memset(inputBuff, 0, sizeof(inputBuff));
-            free(userInput);
+        if (inputBuff[0] == '#' || inputBuff[0] == '\n'){
+            memset(inputBuff, 0, sizeof(inputBuff));
             continue;
         }
-        userInput[strcspn(userInput, "\n")] = 0;
-//        userInput[strcspn(inputBuff, "\n")] = 0;
+        inputBuff[strcspn(inputBuff, "\n")] = 0;
         // check if variable expansion is needed for $$
-        if (strstr(userInput, "$$")){
-            expandVar(userInput);
+        if (strstr(inputBuff, "$$")){
+            expandVar(inputBuff);
         }
-        parsedInput = strtok(userInput, " ");
+        parsedInput = strtok(inputBuff, " ");
         int i = 0;
         // split space separated user input into an array of string literals holding each argument
         while (parsedInput != NULL){
@@ -257,7 +247,7 @@ void shell() {
                 }
             }
         }
-        // starting from last child process, kill all including parent and exit smallsh
+            // starting from last child process, kill all including parent and exit smallsh
         else if (strcmp(commandArgs[0], "exit") == 0) {
             for (; numProcesses > 0; numProcesses--) {
                 kill(openPid[numProcesses - 1], SIGKILL);
@@ -282,7 +272,6 @@ void shell() {
         // check if last letter is &
         // check for blank input
         // check for #
-        free(userInput);
     }
 }
 
