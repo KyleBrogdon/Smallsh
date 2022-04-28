@@ -25,6 +25,7 @@ int backgroundCommands = 0;  // tracks non-built in processes that have been exe
 int terminationStatus = 0; // last termination code
 int inputFlag = 0;
 int outputFlag = 0;
+int childCalled = 0;
 char *outputFileName = "\0";
 char *inputFileName = "\0";
 char inputBuff[MAX_LEN];
@@ -32,6 +33,7 @@ char inputBuff[MAX_LEN];
 
 
 void newChild(){
+    childCalled = 1;
     char *argsToRun[numCmds+1];
     int sourceFD;
     int targetFD;
@@ -64,15 +66,11 @@ void newChild(){
                 // open source file
                 sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1) {
-                    perror("source open()");
-                    fflush(stderr);
                     exit(1);
                 }
                 // redirect stdin to source
                 result = dup2(sourceFD, 0);
                 if (result == -1) {
-                    perror("source dup2()");
-                    fflush(stderr);
                     exit(1);
                 }
 //                close(sourceFD);
@@ -81,25 +79,18 @@ void newChild(){
                 // open target file
                 targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                 if (targetFD == -1) {
-                    perror("target open()");
-                    fflush(stderr);
                     exit(1);
                 }
                 //redirect stdout to target
                 result2 = dup2(targetFD, 1);
                 if (result2 == -1) {
-                    perror("target dup2()");
-                    fflush(stderr);
                     exit(1);
                 }
 //                close(targetFD);
             }
             if (execvp(argsToRun[0], argsToRun) == -1){
-                perror("execvp");
-                fflush(stdout);
                 exit(1);
             } else {
-                fflush(stdout);
                 exit(0);
             }
         }
@@ -115,12 +106,12 @@ void newChild(){
 //                if (errcode != 0){
 //                printf("%d", errcode);
 //                    }
-//                if (terminationStatus == 1){
-//                    printf("%d", terminationStatus);
-//                    fflush(stdout);
-//              }
+                if (terminationStatus != 0){
+                    fprintf(stderr, "Error: Exited with code %d \n", terminationStatus);
+                    fflush(stderr);
+              }
             }
-            if (WIFSIGNALED(childStatus)) {
+            else if (WIFSIGNALED(childStatus)) {
                 if (WTERMSIG(childStatus) == SIGILL) {
                     perror("sigsegv");
                     fflush(stdout);
@@ -259,14 +250,16 @@ void shell() {
             }
         }
         else if (strcmp(commandArgs[0], "status") == 0){
-            if (backgroundCommands == 0){
+            if (childCalled == 0){
                 continue;
             }
             else{
                 int length = snprintf(NULL, 0, "%d", terminationStatus);  // find length of status
                 char *str = malloc(length + 1);
                 snprintf(str, length+1, "%d", terminationStatus);  // convert status to string with correct length
-                printf("%s", str);
+                printf("exit value %s \n", str);
+                fflush(stdout);
+                free (str);
             }
         }
         else{

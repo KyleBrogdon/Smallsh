@@ -1,6 +1,3 @@
-.
-..
-.cmake
 CMakeCache.txt
 CMakeFiles
 Makefile
@@ -12,6 +9,7 @@ junk
 junk2
 out
 outfile
+outtestfilepls
 smallsh
 smallsh.cbp
 unk
