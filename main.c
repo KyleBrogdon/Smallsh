@@ -30,12 +30,15 @@ char *inputFileName = "\0";
 
 
 
+
 void newChild(){
     char *argsToRun[numCmds+1];
     int sourceFD;
     int targetFD;
     int result;
     int result2;
+    int savedIn;
+    int savedout;
     for(int i = 0; i < numCmds+1; i++){
         argsToRun[i] = commandArgs[i];
     }
@@ -44,6 +47,8 @@ void newChild(){
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
+    savedIn = dup(STDIN_FILENO);
+    savedout = dup(STDOUT_FILENO);
     spawnPid = fork();
     switch(spawnPid){
         case -1:
@@ -58,13 +63,14 @@ void newChild(){
             inputFileName = "\0";
             if (strcmp(localInputName, "\0") !=0){ //need to open input file for input redirection
                 // open source file
+                fflush(stdin);
                 sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1){
                     perror("source open()");
                     exit(1);
                 }
                 // redirect stdin to source
-                result = dup2(sourceFD, 0);
+                result = dup2(sourceFD, STDIN_FILENO);
                 if (result == -1){
                     perror("source dup2()");
                     exit(1);
@@ -72,13 +78,14 @@ void newChild(){
             }
             if (strcmp(localOutputName, "\0") !=0){ //need to open output file for output redirection
                 // open target file
+                fflush(stdout);
                 targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0644);
                 if (targetFD == -1){
                     perror("target open()");
                     exit(1);
                 }
                 //redirect stdout to target
-                result2 = dup2(targetFD, 1);
+                result2 = dup2(targetFD, STDOUT_FILENO);
                 if (result2 == -1){
                     perror("target dup2()");
                     exit(1);
@@ -89,8 +96,14 @@ void newChild(){
                 perror("execvp");
 //                fprintf(stderr, "Error executing command");
 //                fflush(stdout);
-                close(targetFD);
-                close(sourceFD);
+                if (strcmp(localInputName, "\0") !=0) {
+                    close(sourceFD);
+                }
+                if (strcmp(localOutputName, "\0") !=0) {
+                    close(targetFD);
+                }
+                fflush(stdout);
+                fflush(stdin);
                 exit(1);
             }
             else {
@@ -98,8 +111,16 @@ void newChild(){
 //                    close(1);
 //                }
                 fflush(stdout);
-                close(targetFD);
-                close(sourceFD);
+                if (strcmp(localInputName, "\0") !=0) {
+                    dup2(savedIn, STDIN_FILENO);
+                    close(savedIn);
+                }
+                if (strcmp(localOutputName, "\0") !=0) {
+                    dup2(savedout, STDOUT_FILENO);
+                    close(savedout);
+                }
+                fflush(stdout);
+                fflush(stdin);
                 exit(0);
             }
         default:
@@ -272,3 +293,4 @@ int main() {
     printf("Hello, World!\n");
     return 0;
 }
+
