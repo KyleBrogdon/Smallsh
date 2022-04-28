@@ -1,4 +1,5 @@
 #define _POSIX_SOURCE
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -170,28 +171,36 @@ void shell() {
         openPid[0] = getpid();
         printf(": ");
         fflush(stdout);
-        if(fgets(inputBuff, MAX_LEN-1, input) == NULL){  //-1 leaves room for null terminator
-            if (ferror(input)) {
-                perror("fgets error");
-                exit(1);
-            }
-            if (feof(input)){
-            }
-            else {
-                continue;
-            }
-            }
+        char *userInput = NULL;
+        size_t size;
+        if (getline(&userInput, &size, input)== -1){
+            perror("get line");
+            fflush(stderr);
+        }
+//        if(fgets(inputBuff, MAX_LEN-1, input) == NULL){  //-1 leaves room for null terminator
+//            if (ferror(input)) {
+//                perror("fgets error");
+//                exit(1);
+//            }
+//            if (feof(input)){
+//            }
+//            else {
+//                continue;
+//            }
+//            }
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
-        if (inputBuff[0] == '#' || inputBuff[0] == '\n'){
-            memset(inputBuff, 0, sizeof(inputBuff));
+        if (userInput[0] == '#' || userInput[0] == '\n'){
+//            memset(inputBuff, 0, sizeof(inputBuff));
+            free(userInput);
             continue;
         }
-        inputBuff[strcspn(inputBuff, "\n")] = 0;
+        userInput[strcspn(userInput, "\n")] = 0;
+//        userInput[strcspn(inputBuff, "\n")] = 0;
         // check if variable expansion is needed for $$
-        if (strstr(inputBuff, "$$")){
-            expandVar(inputBuff);
+        if (strstr(userInput, "$$")){
+            expandVar(userInput);
         }
-        parsedInput = strtok(inputBuff, " ");
+        parsedInput = strtok(userInput, " ");
         int i = 0;
         // split space separated user input into an array of string literals holding each argument
         while (parsedInput != NULL){
@@ -273,6 +282,7 @@ void shell() {
         // check if last letter is &
         // check for blank input
         // check for #
+        free(userInput);
     }
 }
 
