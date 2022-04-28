@@ -37,8 +37,6 @@ void newChild(){
     int targetFD;
     int result;
     int result2;
-    int savedIn;
-    int savedout;
     for(int i = 0; i < numCmds+1; i++){
         argsToRun[i] = commandArgs[i];
     }
@@ -47,8 +45,6 @@ void newChild(){
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
-    savedIn = dup(STDIN_FILENO);
-    savedout = dup(STDOUT_FILENO);
     spawnPid = fork();
     switch(spawnPid){
         case -1:
@@ -67,64 +63,48 @@ void newChild(){
                 sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1){
                     perror("source open()");
+                    fflush(stdout);
                     exit(1);
                 }
                 // redirect stdin to source
-                result = dup2(sourceFD, STDIN_FILENO);
+                result = dup2(sourceFD, 0);
                 if (result == -1){
                     perror("source dup2()");
+                    fflush(stdout);
                     exit(1);
                 }
+//                close(sourceFD);
             }
             if (strcmp(localOutputName, "\0") !=0){ //need to open output file for output redirection
                 // open target file
-                fflush(stdout);
-                targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+                targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                 if (targetFD == -1){
                     perror("target open()");
+                    fflush(stdout);
                     exit(1);
                 }
                 //redirect stdout to target
-                result2 = dup2(targetFD, STDOUT_FILENO);
+                result2 = dup2(targetFD, 1);
                 if (result2 == -1){
                     perror("target dup2()");
+                    fflush(stdout);
                     exit(1);
                 }
+//                close(targetFD);
             }
             if (execvp(argsToRun[0], argsToRun) == -1){
-                fflush(stdout);
                 perror("execvp");
-//                fprintf(stderr, "Error executing command");
-//                fflush(stdout);
-                if (strcmp(localInputName, "\0") !=0) {
-                    close(sourceFD);
-                }
-                if (strcmp(localOutputName, "\0") !=0) {
-                    close(targetFD);
-                }
                 fflush(stdout);
-                fflush(stdin);
                 exit(1);
             }
             else {
-//                if (strcmp(localOutputName, "\0") !=0){
-//                    close(1);
-//                }
                 fflush(stdout);
-                if (strcmp(localInputName, "\0") !=0) {
-                    dup2(savedIn, STDIN_FILENO);
-                    close(savedIn);
-                }
-                if (strcmp(localOutputName, "\0") !=0) {
-                    dup2(savedout, STDOUT_FILENO);
-                    close(savedout);
-                }
-                fflush(stdout);
-                fflush(stdin);
                 exit(0);
             }
         default:
             spawnPid = waitpid(spawnPid, &childStatus, 0);
+            outputFileName = "\0";
+            inputFileName = "\0";
             openPid[numProcesses] = '\0';
             numProcesses --;
             if (WIFEXITED(childStatus)){
@@ -134,6 +114,12 @@ void newChild(){
 //                    fflush(stdout);
 //                    exit(1);
 //                }
+            }
+            if (WIFSIGNALED(childStatus)){
+                if (WTERMSIG(childStatus) == SIGSEGV){
+                    perror("sigsegv");
+                    fflush(stdout);
+                }
             }
             else{
                 terminationStatus = WTERMSIG(childStatus);
