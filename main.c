@@ -197,6 +197,7 @@ void cleanUpBackground(){
         else{
             finishedBackground[i] = backgroundPid;
             finishedStatus[i] = childStatus;
+            // clean up with array shift of runningprocesses
             finishedCount++;
         }
     }
