@@ -29,6 +29,7 @@ int childCalled = 0;
 char *outputFileName = "\0";
 char *inputFileName = "\0";
 char inputBuff[MAX_LEN];
+int finishedBackground[MAX_LEN];
 
 // TODO: create an array to hold finished processes
 // TODO: check for & when parsing user input, set flag
@@ -167,7 +168,6 @@ void expandVar(char *command){
 void shell() {
     while(1){
         memset(inputBuff, 0, sizeof(inputBuff));
-        // check for input redirecton
         printf(": ");
         fflush(stdout);
         if(fgets(inputBuff, MAX_LEN, stdin) == NULL){
@@ -229,7 +229,19 @@ void shell() {
             if (numCmds> 2) {
                 perror("invalid number of arguments");
                 exit(1);
-            } else if (numCmds == 1) {
+            }
+            else if (numCmds == 2){
+                if (strcmp(commandArgs[1], "&") == 0){
+                    commandArgs[1] = NULL;
+                    goto cdHome;
+                }
+                int dir = chdir(commandArgs[1]);
+                if (dir != 0) {
+                    perror("chdir error");
+                    exit(1);
+                }
+            }
+            cdHome: {  // only cd was input by user or extranous &
                 char *home = getenv("HOME");
                 if (home == NULL) {
                     perror("getenv error");
@@ -241,22 +253,21 @@ void shell() {
                     perror("chdir error");
                     exit(1);
                 }
-            } else {
-                int dir = chdir(commandArgs[1]);
-                if (dir != 0) {
-                    perror("chdir error");
-                    exit(1);
-                }
+                numCmds = 0;
+                memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
+                continue;
             }
         }
             // starting from last child process, kill all including parent and exit smallsh
-        else if (strcmp(commandArgs[0], "exit") == 0) {
+        if (strcmp(commandArgs[0], "exit") == 0) {
             for (; numProcesses > 0; numProcesses--) {
                 kill(openPid[numProcesses - 1], SIGKILL);
             }
         }
-        else if (strcmp(commandArgs[0], "status") == 0){
+        if (strcmp(commandArgs[0], "status") == 0){
+            memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
             if (childCalled == 0){
+                numCmds = 0;
                 continue;
             }
             else{
@@ -266,14 +277,16 @@ void shell() {
                 printf("exit value %s \n", str);
                 fflush(stdout);
                 free (str);
+                numCmds = 0;
+                continue;
             }
         }
-        else{
-            newChild();  // forks a new child process to execute commands
+        if (numCmds > 1) {
+            if (strcmp(commandArgs[numCmds - 1], "&") == 0) {
+                backgroundCommands++;
+            }
         }
-        // check for <
-        // check for >
-        // check if last letter is &
+        newChild();  // forks a new child process to execute commands
     }
 }
 
