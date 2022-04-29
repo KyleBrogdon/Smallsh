@@ -21,7 +21,9 @@ void expandVar(char *command);
 void newChild();
 int openPid[MAX_LEN] = {0};         // tracks all open processes from this shell, background and foreground
 int numProcesses = 1;               // starts at 1 with main process
+int runningBackground[MAX_LEN];     // array that holds non-completed background proccses
 int backgroundCommands = 0;         // tracks non-built in processes that have been executed since parent shell started
+int background = 0;                 // flag that indicates whether current forked process is background
 int terminationStatus = 0;          // holds termination code of last foreground process run by shell
 int inputFlag = 0;                  // flag used to indicate user is redirecting input
 int outputFlag = 0;                 // flag used to indicate user is redirecting output
@@ -52,7 +54,7 @@ void newChild(){
         argsToRun[i] = commandArgs[i];
     }
     numCmds = 0;  // reset number of commands counter
-    memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer in case this is a background process
+    memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
@@ -60,6 +62,10 @@ void newChild(){
     if(spawnPid > 0){
         numProcesses ++;
         openPid[numProcesses-1] = spawnPid;
+        if (background == 1){
+            fprintf(stdout, "Background pid is %d", spawnPid);
+            fflush(stdout);
+        }
     }
     switch(spawnPid) {
         case -1: {
@@ -67,6 +73,9 @@ void newChild(){
             exit(1);
         }
         case 0: {
+            if (background == 1){
+                runningBackground[backgroundCommands] = spawnPid;
+            }
             char *localOutputName = outputFileName;
             char *localInputName = inputFileName;
 //            outputFileName = "\0";
@@ -82,7 +91,6 @@ void newChild(){
                 if (result == -1) {
                     exit(1);
                 }
-//                close(sourceFD);
             }
             if (strcmp(localOutputName, "\0") != 0) { //need to open output file for output redirection
                 // open target file
@@ -95,7 +103,35 @@ void newChild(){
                 if (result2 == -1) {
                     exit(1);
                 }
-//                close(targetFD);
+            }
+            // if process is running in the background and either redirection wasn't specified, redirect to /dev/null
+            if ((background == 1) & ((strcmp(localInputName, "\0") == 0) || (strcmp(localOutputName, "\0")) == 0)){
+                if (strcmp(localInputName, "\0") == 0){
+                    localInputName = "/dev/null";
+                    // open source file
+                    sourceFD = open(localInputName, O_RDONLY);
+                    if (sourceFD == -1) {
+                        exit(1);
+                    }
+                    // redirect stdin to source
+                    result = dup2(sourceFD, 0);
+                    if (result == -1) {
+                        exit(1);
+                    }
+                }
+                if (strcmp(localOutputName, "\0") == 0){
+                    localOutputName = "/dev/null";
+                    // open target file
+                    targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+                    if (targetFD == -1) {
+                        exit(1);
+                    }
+                    //redirect stdout to target
+                    result2 = dup2(targetFD, 1);
+                    if (result2 == -1) {
+                        exit(1);
+                    }
+                }
             }
             if (execvp(argsToRun[0], argsToRun) == -1){
                 exit(1);
@@ -104,36 +140,41 @@ void newChild(){
             }
         }
         default: {
-            spawnPid = waitpid(spawnPid, &childStatus, 0);
-            outputFileName = "\0";
-            inputFileName = "\0";
-            openPid[numProcesses - 1] = '\0';
-            numProcesses--;
-            if (WIFEXITED(childStatus)) {
-                terminationStatus = WEXITSTATUS(childStatus);
+            if (background == 0) {  // if it was run in the foreground, wait for it
+                spawnPid = waitpid(spawnPid, &childStatus, 0);
+                openPid[numProcesses - 1] = '\0';
+                numProcesses--;
+                if (WIFEXITED(childStatus)) {
+                    terminationStatus = WEXITSTATUS(childStatus);
 //                int errcode = errno;
 //                if (errcode != 0){
 //                printf("%d", errcode);
 //                    }
-                if (terminationStatus != 0){
-                    fprintf(stderr, "Error: Exited with code %d \n", terminationStatus);
-                    fflush(stderr);
-              }
-            }
-            else if (WIFSIGNALED(childStatus)) {
-                if (WTERMSIG(childStatus) == SIGILL) {
-                    perror("sigsegv");
-                    fflush(stdout);
+                    if (terminationStatus != 0) {
+                        fprintf(stderr, "Error: Exited with code %d \n", terminationStatus);
+                        fflush(stderr);
+                    }
+                } else if (WIFSIGNALED(childStatus)) {
+                    if (WTERMSIG(childStatus) == SIGILL) {
+                        perror("sigsegv");
+                        fflush(stdout);
+                    }
+                } else {
+                    terminationStatus = WTERMSIG(childStatus);
                 }
-            } else {
-                terminationStatus = WTERMSIG(childStatus);
             }
+            outputFileName = "\0";  // reset outputFileName
+            inputFileName = "\0";  // reset inputFileName
+            background = 0;  // reset background flag
             return;
         }
     }
 
 }
 
+void cleanUpBackground(){
+
+}
 
 void expandVar(char *command){
     // convert PID to a string for manipulation, code citation https://stackoverflow.com/questions/5242524/converting-int-to-string-in-c
@@ -169,6 +210,7 @@ void expandVar(char *command){
 void shell() {
     while(1){
         memset(inputBuff, 0, sizeof(inputBuff));
+        cleanUpBackground();
         printf(": ");
         fflush(stdout);
         if(fgets(inputBuff, MAX_LEN, stdin) == NULL){
@@ -285,6 +327,7 @@ void shell() {
         if (numCmds > 1) {
             if (strcmp(commandArgs[numCmds - 1], "&") == 0) {
                 backgroundCommands++;
+                background = 1;
             }
         }
         newChild();  // forks a new child process to execute commands
