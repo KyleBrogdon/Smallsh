@@ -35,6 +35,7 @@ char inputBuff[MAX_LEN];
 // TODO: if flag is true, print background PID and flush
 // TODO: create an array to hold finished process exit code (pseudo-dict)
 // TODO: if background is true, input/output must redirect to /dev/null (check for output/input file name)
+// TODO: before new fgets, check if background processes > 0, then loop through array, if != Null, print results of both indices
 // TODO: split code into separate functions
 
 void newChild(){
