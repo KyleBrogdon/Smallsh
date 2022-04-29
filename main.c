@@ -22,8 +22,7 @@ void newChild();
 int openPid[MAX_LEN] = {0};         // tracks all open processes from this shell, background and foreground
 int numProcesses = 1;               // starts at 1 with main process
 int runningBackground[MAX_LEN];     // array that holds non-completed background proccses
-int backgroundCommands = 0;         // tracks non-built in processes that have been executed since parent shell started
-int background = 0;                 // flag that indicates whether current forked process is background
+int backgroundFlag = 0;                 // flag that indicates whether current forked process is background
 int terminationStatus = 0;          // holds termination code of last foreground process run by shell
 int inputFlag = 0;                  // flag used to indicate user is redirecting input
 int outputFlag = 0;                 // flag used to indicate user is redirecting output
@@ -33,6 +32,7 @@ char *inputFileName = "\0";         // string that holds the pathname to the red
 char inputBuff[MAX_LEN];            // buffer that holds user input commands prior to parsing
 int finishedBackground[MAX_LEN];    // array that holds completed background processes which need to be printed
 int finishedStatus[MAX_LEN];        // array that holds exit status of finishedBackground processes in matching index
+int finishedCount;                  // counter for processes which need to be printed
 
 // TODO: create an array to hold finished processes
 // TODO: check for & when parsing user input, set flag
@@ -62,7 +62,7 @@ void newChild(){
     if(spawnPid > 0){
         numProcesses ++;
         openPid[numProcesses-1] = spawnPid;
-        if (background == 1){
+        if (backgroundFlag == 1){
             fprintf(stdout, "Background pid is %d", spawnPid);
             fflush(stdout);
         }
@@ -73,8 +73,15 @@ void newChild(){
             exit(1);
         }
         case 0: {
-            if (background == 1){
-                runningBackground[backgroundCommands] = spawnPid;
+            if (backgroundFlag == 1){
+                int currentBackgroundCount = 0;
+                int j = 0;
+                // get number of currently running background procceses
+                while (runningBackground[j] != 0){
+                    currentBackgroundCount++;
+                    j++;
+                }
+                runningBackground[currentBackgroundCount + 1] = spawnPid;
             }
             char *localOutputName = outputFileName;
             char *localInputName = inputFileName;
@@ -105,7 +112,7 @@ void newChild(){
                 }
             }
             // if process is running in the background and either redirection wasn't specified, redirect to /dev/null
-            if ((background == 1) & ((strcmp(localInputName, "\0") == 0) || (strcmp(localOutputName, "\0")) == 0)){
+            if ((backgroundFlag == 1) & ((strcmp(localInputName, "\0") == 0) || (strcmp(localOutputName, "\0")) == 0)){
                 if (strcmp(localInputName, "\0") == 0){
                     localInputName = "/dev/null";
                     // open source file
@@ -140,7 +147,7 @@ void newChild(){
             }
         }
         default: {
-            if (background == 0) {  // if it was run in the foreground, wait for it
+            if (backgroundFlag == 0) {  // if it was run in the foreground, wait for it
                 spawnPid = waitpid(spawnPid, &childStatus, 0);
                 openPid[numProcesses - 1] = '\0';
                 numProcesses--;
@@ -165,7 +172,7 @@ void newChild(){
             }
             outputFileName = "\0";  // reset outputFileName
             inputFileName = "\0";  // reset inputFileName
-            background = 0;  // reset background flag
+            backgroundFlag = 0;  // reset background flag
             return;
         }
     }
@@ -173,7 +180,33 @@ void newChild(){
 }
 
 void cleanUpBackground(){
-
+    int currentBackgroundCount = 0;
+    int j = 0;
+    // get number of currently running background processes
+    while (runningBackground[j] != 0){
+        currentBackgroundCount++;
+        j++;
+    }
+    for (int i = 0; i < currentBackgroundCount; i++){
+        int childStatus;
+        int backgroundPid = runningBackground[i];
+        backgroundPid = waitpid(backgroundPid, &childStatus, WNOHANG);
+        if (backgroundPid == 0){
+            continue;
+        }
+        else{
+            finishedBackground[i] = backgroundPid;
+            finishedStatus[i] = childStatus;
+            finishedCount++;
+        }
+    }
+    for(int i = 0; finishedCount > 0; finishedCount --){
+        fprintf(stdout, "Background Process %d is finished: exit/termination status %d ",
+                finishedBackground[i], finishedStatus[i]);
+        fflush(stdout);
+    }
+    memset(finishedBackground, 0, sizeof(finishedBackground));
+    memset(finishedStatus, 0, sizeof(finishedStatus));
 }
 
 void expandVar(char *command){
@@ -326,8 +359,7 @@ void shell() {
         }
         if (numCmds > 1) {
             if (strcmp(commandArgs[numCmds - 1], "&") == 0) {
-                backgroundCommands++;
-                background = 1;
+                backgroundFlag = 1;
             }
         }
         newChild();  // forks a new child process to execute commands
