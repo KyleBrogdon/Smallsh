@@ -30,7 +30,12 @@ char *outputFileName = "\0";
 char *inputFileName = "\0";
 char inputBuff[MAX_LEN];
 
-
+// TODO: create an array to hold finished processes
+// TODO: check for & when parsing user input, set flag
+// TODO: if flag is true, print background PID and flush
+// TODO: create an array to hold finished process exit code (pseudo-dict)
+// TODO: if background is true, input/output must redirect to /dev/null (check for output/input file name)
+// TODO: split code into separate functions
 
 void newChild(){
     childCalled = 1;
