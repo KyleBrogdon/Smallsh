@@ -14,25 +14,27 @@
 
 #define  MAX_LEN      2048 // max length of user commands
 #define  MAX_ARG      512 // max # of arguments
-FILE *input;
-char *commandArgs[MAX_ARG];
-int numCmds = 0;
+
+char *commandArgs[MAX_ARG];         // holds strings containing commands entered by user
+int numCmds = 0;                    // tracks number of separate commands entered each time user inputs
 void expandVar(char *command);
 void newChild();
-int openPid[MAX_LEN] = {0};
-int numProcesses = 1;
-int backgroundCommands = 0;  // tracks non-built in processes that have been executed since parent shell started
-int terminationStatus = 0; // last termination code
-int inputFlag = 0;
-int outputFlag = 0;
-int childCalled = 0;
-char *outputFileName = "\0";
-char *inputFileName = "\0";
-char inputBuff[MAX_LEN];
-int finishedBackground[MAX_LEN];
+int openPid[MAX_LEN] = {0};         // tracks all open processes from this shell, background and foreground
+int numProcesses = 1;               // starts at 1 with main process
+int backgroundCommands = 0;         // tracks non-built in processes that have been executed since parent shell started
+int terminationStatus = 0;          // holds termination code of last foreground process run by shell
+int inputFlag = 0;                  // flag used to indicate user is redirecting input
+int outputFlag = 0;                 // flag used to indicate user is redirecting output
+int childCalled = 0;                // flag used to detect if a non-built in command has been run yet
+char *outputFileName = "\0";        // string that holds the pathname to the redirected output
+char *inputFileName = "\0";         // string that holds the pathname to the redirected input
+char inputBuff[MAX_LEN];            // buffer that holds user input commands prior to parsing
+int finishedBackground[MAX_LEN];    // array that holds completed background processes which need to be printed
+int finishedStatus[MAX_LEN];        // array that holds exit status of finishedBackground processes in matching index
 
 // TODO: create an array to hold finished processes
 // TODO: check for & when parsing user input, set flag
+// TODO: get built ins to handle &
 // TODO: if flag is true, print background PID and flush
 // TODO: create an array to hold finished process exit code (pseudo-dict)
 // TODO: if background is true, input/output must redirect to /dev/null (check for output/input file name)
@@ -132,6 +134,7 @@ void newChild(){
 
 }
 
+
 void expandVar(char *command){
     // convert PID to a string for manipulation, code citation https://stackoverflow.com/questions/5242524/converting-int-to-string-in-c
     // loop through a string and replace instances of needle, code citation https://stackoverflow.com/questions/32413667/replace-all-occurrences-of-a-substring-in-a-string-in-c
@@ -162,8 +165,6 @@ void expandVar(char *command){
     free(str);
 }
 
-
-//implement status
 
 void shell() {
     while(1){
@@ -294,7 +295,6 @@ void shell() {
 int main() {
     openPid[0] = getpid();
     shell();  //start smallsh and parse arguments
-    printf("Hello, World!\n");
     return 0;
 }
 
