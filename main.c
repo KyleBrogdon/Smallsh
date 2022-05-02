@@ -535,12 +535,12 @@ void handleSIGTSTP(int signo){
     pid_t callingPid = getpid();
     if (callingPid == openPid[0] && ignoreBackground == 0){
         ignoreBackground = 1;
-        char * message = "\n Ignoring background process commands \n";
+        char * message = "Ignoring background process commands \n";
         write(STDOUT_FILENO, message, strlen(message));
     }
     else if (callingPid == openPid[0] && ignoreBackground == 1) {
         ignoreBackground = 0;
-        char *message = "\n Background commands restored \n";
+        char *message = "Background commands restored \n";
         write(STDOUT_FILENO, message, strlen(message));
     }
 }
