@@ -59,12 +59,18 @@ void newChild(){
     int childStatus;
     //fork new process
     spawnPid = fork();
-    if(spawnPid > 0){
-        numProcesses ++;
-        openPid[numProcesses-1] = spawnPid;
-        if (backgroundFlag == 1){
-            fprintf(stdout, "Background pid is %d", spawnPid);
+    if(spawnPid > 0) {
+        numProcesses++;
+        openPid[numProcesses - 1] = spawnPid;
+        if (backgroundFlag == 1) {
+            fprintf(stdout, "Background pid is %d\n", spawnPid);
             fflush(stdout);
+            int currentBackgroundCount = 0;
+            // get number of currently running background procceses
+            while (runningBackground[currentBackgroundCount] != 0) {
+                currentBackgroundCount++;
+            }
+            runningBackground[currentBackgroundCount] = spawnPid;
         }
     }
     switch(spawnPid) {
@@ -73,16 +79,6 @@ void newChild(){
             exit(1);
         }
         case 0: {
-            if (backgroundFlag == 1){
-                int currentBackgroundCount = 0;
-                int j = 0;
-                // get number of currently running background procceses
-                while (runningBackground[j] != 0){
-                    currentBackgroundCount++;
-                    j++;
-                }
-                runningBackground[currentBackgroundCount + 1] = spawnPid;
-            }
             char *localOutputName = outputFileName;
             char *localInputName = inputFileName;
 //            outputFileName = "\0";
@@ -187,6 +183,9 @@ void cleanUpBackground(){
         currentBackgroundCount++;
         j++;
     }
+    if (currentBackgroundCount == 0){
+        return;
+    }
     for (int i = 0; i < currentBackgroundCount; i++){
         int childStatus;
         int backgroundPid = runningBackground[i];
@@ -195,10 +194,24 @@ void cleanUpBackground(){
             continue;
         }
         else{
+            for (int k = 0; k < numProcesses; k++){
+                if (openPid[k] == backgroundPid) {
+                    openPid[numProcesses - 1] = '\0';
+                }
+                if (WIFEXITED(childStatus)) {
+                    terminationStatus = WEXITSTATUS(childStatus);
+                } else {
+                    terminationStatus = WTERMSIG(childStatus);
+                }
+            }
             finishedBackground[i] = backgroundPid;
-            finishedStatus[i] = childStatus;
+            finishedStatus[i] = terminationStatus;
+            for (int count = i; count < numProcesses-1; count++){
+                runningBackground[count] = runningBackground[count+1];  // left shift array to remove finished
+            }
             // clean up with array shift of runningprocesses
             finishedCount++;
+            numProcesses--;
         }
     }
     for(int i = 0; finishedCount > 0; finishedCount --){
@@ -206,7 +219,7 @@ void cleanUpBackground(){
                 finishedBackground[i], finishedStatus[i]);
         fflush(stdout);
     }
-    memset(finishedBackground, 0, sizeof(finishedBackground));
+    memset(finishedBackground, 0, sizeof(finishedBackground)); // reset finished background array
     memset(finishedStatus, 0, sizeof(finishedStatus));
 }
 
@@ -361,6 +374,8 @@ void shell() {
         if (numCmds > 1) {
             if (strcmp(commandArgs[numCmds - 1], "&") == 0) {
                 backgroundFlag = 1;
+                commandArgs[numCmds -1] = NULL; // remove & after setting background flag
+                numCmds --;
             }
         }
         newChild();  // forks a new child process to execute commands
