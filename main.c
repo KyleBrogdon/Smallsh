@@ -194,15 +194,16 @@ void cleanUpBackground(){
             continue;
         }
         else{
-            for (int k = 0; k < numProcesses; k++){
+            for (int k = 0; k < numProcesses; k++) {
                 if (openPid[k] == backgroundPid) {
-                    openPid[numProcesses - 1] = '\0';
+                    openPid[k] = '\0';
+                    break;
                 }
-                if (WIFEXITED(childStatus)) {
-                    terminationStatus = WEXITSTATUS(childStatus);
-                } else {
-                    terminationStatus = WTERMSIG(childStatus);
-                }
+            }
+            if (WIFEXITED(childStatus)) {
+                terminationStatus = WEXITSTATUS(childStatus);
+            } else {
+                terminationStatus = WTERMSIG(childStatus);
             }
             finishedBackground[i] = backgroundPid;
             finishedStatus[i] = terminationStatus;
@@ -215,7 +216,7 @@ void cleanUpBackground(){
         }
     }
     for(int i = 0; finishedCount > 0; finishedCount --){
-        fprintf(stdout, "Background Process %d is finished: exit/termination status %d ",
+        fprintf(stdout, "Background Process %d is finished - exit/termination status %d\n",
                 finishedBackground[i], finishedStatus[i]);
         fflush(stdout);
     }
