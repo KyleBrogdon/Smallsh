@@ -44,9 +44,6 @@ void ignoreSIGTSTP();
 
 
 void newChild(){
-    sigset_t baseMask, waitingMask;
-    sigemptyset(&baseMask);
-    sigaddset(&baseMask, SIGTSTP);
     childCalled = 1;
     char *argsToRun[numCmds+1];
     int sourceFD;
@@ -61,7 +58,6 @@ void newChild(){
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
-    sigprocmask(SIG_SETMASK, &baseMask, NULL);
     spawnPid = fork();
     if(spawnPid > 0) {
         numProcesses++;
@@ -166,8 +162,6 @@ void newChild(){
                 spawnPid = waitpid(spawnPid, &childStatus, 0);
                 openPid[numProcesses - 1] = '\0';
                 numProcesses--;
-                sigpending(&waitingMask);
-                if (sigismember(&waitingMask, SIGTSTP));
                 if (WIFEXITED(childStatus)) {
                     terminationStatus = WEXITSTATUS(childStatus);
                     if (terminationStatus != 0) {
