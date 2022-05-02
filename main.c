@@ -22,7 +22,7 @@ void newChild();
 int openPid[MAX_LEN] = {0};         // tracks all open processes from this shell, background and foreground
 int numProcesses = 1;               // starts at 1 with main process
 int runningBackground[MAX_LEN];     // array that holds non-completed background proccses
-int backgroundFlag = 0;                 // flag that indicates whether current forked process is background
+int backgroundFlag = 0;             // flag that indicates whether current forked process is background
 int terminationStatus = 0;          // holds termination code of last foreground process run by shell
 int inputFlag = 0;                  // flag used to indicate user is redirecting input
 int outputFlag = 0;                 // flag used to indicate user is redirecting output
@@ -33,6 +33,12 @@ char inputBuff[MAX_LEN];            // buffer that holds user input commands pri
 int finishedBackground[MAX_LEN];    // array that holds completed background processes which need to be printed
 int finishedStatus[MAX_LEN];        // array that holds exit status of finishedBackground processes in matching index
 int finishedCount;                  // counter for processes which need to be printed
+int ignoreBackground = 0;                 // flag to indicate if SIGSTP was called
+void handleSIGTSTP(int signo);
+void catchSIGTSTP();
+void ignoreSIGINT();
+void defaultSIGINT();
+
 
 // TODO: split code into separate functions
 // TODO: handle SIGINT in parent process (IGNORE)
@@ -40,6 +46,7 @@ int finishedCount;                  // counter for processes which need to be pr
 // TODO: handle SIGINT in child foreground process (TERMINATE)
 // TODO: if child foreground process terminates, parent print signal that killed forground (CHECK SIGTERM)
 // TODO: handle SIGSTP in parent process (informative message that background is now ignored)
+// TODO: add boolean checks to make sure & is ignored
 // TODO: handle SIGSTP in child background process (IGNORE)
 // TODO: handle SIGSTP in child foreground process (IGNORE)
 
@@ -79,10 +86,11 @@ void newChild(){
             exit(1);
         }
         case 0: {
+            if (backgroundFlag == 0){ // if child is a foreground process, must terminate on SIGINT
+                defaultSIGINT();
+            }
             char *localOutputName = outputFileName;
             char *localInputName = inputFileName;
-//            outputFileName = "\0";
-//            inputFileName = "\0";
             if (strcmp(localInputName, "\0") != 0) { //need to open input file for input redirection
                 // open source file
                 sourceFD = open(localInputName, O_RDONLY);
@@ -164,13 +172,9 @@ void newChild(){
                         }
                     }
                 } else if (WIFSIGNALED(childStatus)) {
-                    if (WTERMSIG(childStatus) == SIGILL) {
-                        perror("sigsegv");
-                        fflush(stdout);
-                    }
-                } else {
                     terminationStatus = WTERMSIG(childStatus);
-                }
+                    fprintf(stdout, "Terminated by signal %d \n", terminationStatus);
+                    }
             }
             outputFileName = "\0";  // reset outputFileName
             inputFileName = "\0";  // reset inputFileName
@@ -381,7 +385,9 @@ void shell() {
         }
         if (numCmds > 1) {
             if (strcmp(commandArgs[numCmds - 1], "&") == 0) {
-                backgroundFlag = 1;
+                if (ignoreBackground == 0) {  // if SIGSTP has not been called, process background command
+                    backgroundFlag = 1;
+                }
                 commandArgs[numCmds -1] = NULL; // remove & after setting background flag
                 numCmds --;
             }
@@ -390,14 +396,49 @@ void shell() {
     }
 }
 
+// sets response to SIGINT to default, terminate
+void defaultSIGINT(){
+    struct sigaction SIGINTdefault = {0};
+    SIGINTdefault.sa_handler = SIG_DFL;
+    sigfillset(&SIGINTdefault.sa_mask);
+    SIGINTdefault.sa_flags = 0;
+    sigaction(SIGINT, &SIGINTdefault, NULL);
+}
+
+void ignoreSIGINT(){
+    struct sigaction SIGINTignore = {0};
+    SIGINTignore.sa_handler = SIG_IGN;
+    sigfillset(&SIGINTignore.sa_mask);
+    SIGINTignore.sa_flags = 0;
+    sigaction(SIGINT, &SIGINTignore, NULL);
+}
+
+void handleSIGTSTP(int signo){
+    pid_t callingPid = getpid();
+    if (callingPid == openPid[0] && ignoreBackground == 0){
+        ignoreBackground = 1;
+        char * message = "Ignoring background process commands \n";
+        write(STDOUT_FILENO, message, strlen(message));
+    }
+    else if (callingPid == openPid[0] && ignoreBackground == 1) {
+        ignoreBackground = 0;
+        char *message = "Background commands restored \n";
+        write(STDOUT_FILENO, message, strlen(message));
+    }
+}
+
+void catchSIGTSTP(){
+    struct sigaction SIGTSTPdefault;
+    SIGTSTPdefault.sa_handler = handleSIGTSTP;
+    sigfillset(&SIGTSTPdefault.sa_mask);
+    SIGTSTPdefault.sa_flags = 0;
+    sigaction(SIGTSTP, &SIGTSTPdefault, NULL);
+}
+
 
 int main() {
-    struct sigaction SIGINT_action = {0};
-    struct sigaction SIGSTP_action = {0};
-    SIGINT_action.handler = handle_SIGINT;
-    sigaction(SIGINT, &SIGINT_action, NULL);
-    SIGSTP_action.handler = handle_SIGSTP;
-    sigaction(SIGINT, &SIGINT_action, NULL);
+    catchSIGTSTP();  // catches SIGSTP and redirects to handle
+    ignoreSIGINT();  // parent process will ignore SIGINT
     openPid[0] = getpid();
     shell();  //start smallsh and parse arguments
     cleanUpBackground();
