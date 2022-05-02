@@ -149,10 +149,6 @@ void newChild(){
                 numProcesses--;
                 if (WIFEXITED(childStatus)) {
                     terminationStatus = WEXITSTATUS(childStatus);
-//                int errcode = errno;
-//                if (errcode != 0){
-//                printf("%d", errcode);
-//                    }
                     if (terminationStatus != 0) {
                         fprintf(stderr, "Error: Exited with code %d \n", terminationStatus);
                         fflush(stderr);
@@ -196,7 +192,7 @@ void cleanUpBackground(){
         else{
             for (int k = 0; k < numProcesses; k++) {
                 if (openPid[k] == backgroundPid) {
-                    openPid[k] = '\0';
+                    openPid[k] = '\0';  // need to shift this
                     break;
                 }
             }
@@ -207,7 +203,7 @@ void cleanUpBackground(){
             }
             finishedBackground[i] = backgroundPid;
             finishedStatus[i] = terminationStatus;
-            for (int count = i; count < numProcesses-1; count++){
+            for (int count = i; count < numProcesses; count++){
                 runningBackground[count] = runningBackground[count+1];  // left shift array to remove finished
             }
             // clean up with array shift of runningprocesses
@@ -218,6 +214,7 @@ void cleanUpBackground(){
     for(int i = 0; finishedCount > 0; finishedCount --){
         fprintf(stdout, "Background Process %d is finished - exit/termination status %d\n",
                 finishedBackground[i], finishedStatus[i]);
+        i++;
         fflush(stdout);
     }
     memset(finishedBackground, 0, sizeof(finishedBackground)); // reset finished background array
