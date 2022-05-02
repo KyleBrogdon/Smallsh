@@ -330,7 +330,9 @@ void shell() {
         if (strcmp(commandArgs[0], "cd") == 0) {
             if (numCmds> 2) {
                 perror("invalid number of arguments");
-                exit(1);
+                numCmds = 0;
+                memset(commandArgs, 0, sizeof(commandArgs));
+                continue;
             }
             else if (numCmds == 2){
                 if (strcmp(commandArgs[1], "&") == 0){
@@ -342,22 +344,28 @@ void shell() {
                     perror("chdir error");
                     exit(1);
                 }
-            }
-            cdHome: {  // only cd was input by user or extranous &
-                char *home = getenv("HOME");
-                if (home == NULL) {
-                    perror("getenv error");
-                    exit(1);
-                }
-                int dir = chdir(home);
-
-                if (dir != 0) {
-                    perror("chdir error");
-                    exit(1);
-                }
                 numCmds = 0;
-                memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
+                memset(commandArgs, 0, sizeof(commandArgs));
                 continue;
+            }
+            else {
+                cdHome:
+                {  // only cd was input by user or extranous &
+                    char *home = getenv("HOME");
+                    if (home == NULL) {
+                        perror("getenv error");
+                        exit(1);
+                    }
+                    int dir = chdir(home);
+
+                    if (dir != 0) {
+                        perror("chdir error");
+                        exit(1);
+                    }
+                    numCmds = 0;
+                    memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
+                    continue;
+                }
             }
         }
             // starting from last child process, kill all including parent and exit smallsh
