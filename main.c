@@ -17,8 +17,8 @@
 
 char *commandArgs[MAX_ARG];         // holds strings containing commands entered by user
 int numCmds = 0;                    // tracks number of separate commands entered each time user inputs
-void expandVar(char *command);
-void newChild();
+void expandVar(char *command);      // function that expands && into the PID
+void newChild();                    // function that spawns a child process to execute commands
 int openPid[MAX_LEN] = {0};         // tracks all open processes from this shell, background and foreground
 int numProcesses = 1;               // starts at 1 with main process
 int runningBackground[MAX_LEN];     // array that holds non-completed background proccses
@@ -33,22 +33,15 @@ char inputBuff[MAX_LEN];            // buffer that holds user input commands pri
 int finishedBackground[MAX_LEN];    // array that holds completed background processes which need to be printed
 int finishedStatus[MAX_LEN];        // array that holds exit status of finishedBackground processes in matching index
 int finishedCount;                  // counter for processes which need to be printed
-int ignoreBackground = 0;                 // flag to indicate if SIGSTP was called
-void handleSIGTSTP(int signo);
-void catchSIGTSTP();
-void ignoreSIGINT();
-void defaultSIGINT();
+int ignoreBackground = 0;           // flag to indicate if SIGSTP was called
+void handleSIGTSTP(int signo);      // handles the SIGTSTP to turn on/off background commands
+void catchSIGTSTP();                // catches a call of SIGTSTP and passes it to handleSIGTSTP
+void ignoreSIGINT();                // sets the response to SIGINT to ignore
+void defaultSIGINT();               // sets the response to SIGINT to terminate
 
 
 // TODO: split code into separate functions
-// TODO: handle SIGINT in parent process (IGNORE)
-// TODO: handle SIGINT in child background process (IGNORE)
-// TODO: handle SIGINT in child foreground process (TERMINATE)
-// TODO: if child foreground process terminates, parent print signal that killed forground (CHECK SIGTERM)
-// TODO: handle SIGSTP in parent process (informative message that background is now ignored)
-// TODO: add boolean checks to make sure & is ignored
-// TODO: handle SIGSTP in child background process (IGNORE)
-// TODO: handle SIGSTP in child foreground process (IGNORE)
+
 
 void newChild(){
     childCalled = 1;
