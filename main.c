@@ -34,14 +34,14 @@ int finishedBackground[MAX_LEN];    // array that holds completed background pro
 int finishedStatus[MAX_LEN];        // array that holds exit status of finishedBackground processes in matching index
 int finishedCount;                  // counter for processes which need to be printed
 
-// TODO: create an array to hold finished processes
-// TODO: check for & when parsing user input, set flag
-// TODO: get built ins to handle &
-// TODO: if flag is true, print background PID and flush
-// TODO: create an array to hold finished process exit code (pseudo-dict)
-// TODO: if background is true, input/output must redirect to /dev/null (check for output/input file name)
-// TODO: before new fgets, check if background processes > 0, then loop through array, if != Null, print results of both indices
 // TODO: split code into separate functions
+// TODO: handle SIGINT in parent process (IGNORE)
+// TODO: handle SIGINT in child background process (IGNORE)
+// TODO: handle SIGINT in child foreground process (TERMINATE)
+// TODO: if child foreground process terminates, parent print signal that killed forground (CHECK SIGTERM)
+// TODO: handle SIGSTP in parent process (informative message that background is now ignored)
+// TODO: handle SIGSTP in child background process (IGNORE)
+// TODO: handle SIGSTP in child foreground process (IGNORE)
 
 void newChild(){
     childCalled = 1;
@@ -392,6 +392,12 @@ void shell() {
 
 
 int main() {
+    struct sigaction SIGINT_action = {0};
+    struct sigaction SIGSTP_action = {0};
+    SIGINT_action.handler = handle_SIGINT;
+    sigaction(SIGINT, &SIGINT_action, NULL);
+    SIGSTP_action.handler = handle_SIGSTP;
+    sigaction(SIGINT, &SIGINT_action, NULL);
     openPid[0] = getpid();
     shell();  //start smallsh and parse arguments
     cleanUpBackground();
