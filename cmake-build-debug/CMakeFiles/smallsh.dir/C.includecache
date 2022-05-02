@@ -13,8 +13,6 @@ stdlib.h
 -
 unistd.h
 -
-dirent.h
--
 string.h
 -
 signal.h
@@ -24,7 +22,5 @@ sys/wait.h
 sys/types.h
 -
 fcntl.h
--
-errno.h
 -
 

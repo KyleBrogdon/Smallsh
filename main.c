@@ -1,15 +1,11 @@
-#define _POSIX_SOURCE
-#define  _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <dirent.h>
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <errno.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -43,10 +39,6 @@ void smallshCD();                   // handles change directory command inside s
 void smallshStatus();               // handles exit command inside smallsh
 
 
-
-// TODO: split code into separate functions
-
-
 void newChild(){
     childCalled = 1;
     char *argsToRun[numCmds+1];
@@ -77,11 +69,14 @@ void newChild(){
             runningBackground[currentBackgroundCount] = spawnPid;
         }
     }
+
+    // code citation, exploration monitoring child processes example code https://canvas.oregonstate.edu/courses/1870063/pages/exploration-process-api-monitoring-child-processes?module_item_id=22026548
     switch(spawnPid) {
         case -1: {
             perror("fork error");
             exit(1);
         }
+        // code citation for all uses of dup2/redirection, exploration I/O https://canvas.oregonstate.edu/courses/1870063/pages/exploration-processes-and-i-slash-o?module_item_id=22026557
         case 0: {
             if (backgroundFlag == 0){ // if child is a foreground process, must terminate on SIGINT
                 defaultSIGINT();
@@ -149,12 +144,14 @@ void newChild(){
                     }
                 }
             }
+            // code citation execvp usage, exploration executing new program https://canvas.oregonstate.edu/courses/1870063/pages/exploration-process-api-executing-a-new-program?module_item_id=22026549
             if (execvp(argsToRun[0], argsToRun) == -1){
                 exit(1);
             } else {
                 exit(0);
             }
         }
+        // code citation, dealing with child termination status https://canvas.oregonstate.edu/courses/1870063/pages/exploration-process-api-creating-and-terminating-processes?module_item_id=22026547
         default: {
             if (backgroundFlag == 0) {  // if it was run in the foreground, wait for it
                 spawnPid = waitpid(spawnPid, &childStatus, 0);
@@ -450,7 +447,7 @@ void catchSIGTSTP(){
     struct sigaction SIGTSTPdefault;
     SIGTSTPdefault.sa_handler = handleSIGTSTP;
     sigfillset(&SIGTSTPdefault.sa_mask);
-    SIGTSTPdefault.sa_flags = 0;
+    SIGTSTPdefault.sa_flags = SA_RESTART;
     sigaction(SIGTSTP, &SIGTSTPdefault, NULL);
 }
 
