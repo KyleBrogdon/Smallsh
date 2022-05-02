@@ -87,6 +87,8 @@ void newChild(){
                 // open source file
                 sourceFD = open(localInputName, O_RDONLY);
                 if (sourceFD == -1) {
+                    fprintf(stderr, "Source open error");
+                    fflush(stderr);
                     exit(1);
                 }
                 // redirect stdin to source
@@ -99,6 +101,8 @@ void newChild(){
                 // open target file
                 targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                 if (targetFD == -1) {
+                    fprintf(stderr, "Target open error");
+                    fflush(stderr);
                     exit(1);
                 }
                 //redirect stdout to target
@@ -114,6 +118,8 @@ void newChild(){
                     // open source file
                     sourceFD = open(localInputName, O_RDONLY);
                     if (sourceFD == -1) {
+                        fprintf(stderr, "Source open error");
+                        fflush(stderr);
                         exit(1);
                     }
                     // redirect stdin to source
@@ -127,6 +133,8 @@ void newChild(){
                     // open target file
                     targetFD = open(localOutputName, O_WRONLY | O_CREAT | O_TRUNC, 0666);
                     if (targetFD == -1) {
+                        fprintf(stderr, "Target open error");
+                        fflush(stderr);
                         exit(1);
                     }
                     //redirect stdout to target
@@ -150,8 +158,10 @@ void newChild(){
                 if (WIFEXITED(childStatus)) {
                     terminationStatus = WEXITSTATUS(childStatus);
                     if (terminationStatus != 0) {
-                        fprintf(stderr, "Error: Exited with code %d \n", terminationStatus);
-                        fflush(stderr);
+                        if (strcmp(argsToRun[0], "test") != 0) {
+                            fprintf(stderr, "Error: Exited with code %d \n", terminationStatus);
+                            fflush(stderr);
+                        }
                     }
                 } else if (WIFSIGNALED(childStatus)) {
                     if (WTERMSIG(childStatus) == SIGILL) {
@@ -384,6 +394,7 @@ void shell() {
 int main() {
     openPid[0] = getpid();
     shell();  //start smallsh and parse arguments
+    cleanUpBackground();
     return 0;
 }
 
