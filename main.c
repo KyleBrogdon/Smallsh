@@ -40,7 +40,12 @@ void parseUserInput();              // parses user input and delimits by spaces 
 void smallshCD();                   // handles change directory command inside smallsh
 void smallshStatus();               // handles exit command inside smallsh
 
-
+/**
+ *
+ *
+ *
+ *
+ */
 void newChild(){
     childCalled = 1;
     char *argsToRun[numCmds+1];
