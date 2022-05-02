@@ -310,7 +310,7 @@ void cleanUpBackground(){
         else{ // process is ready to be reaped, find it in the array
             for (int k = 0; k < numProcesses; k++) {
                 if (openPid[k] == backgroundPid) {
-                    openPid[k] = "\0";
+                    openPid[k] = '\0';
                     break;
                 }
             }
