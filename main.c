@@ -40,6 +40,7 @@ void defaultSIGINT();               // sets the response to SIGINT to terminate
 void parseUserInput();              // parses user input and delimits by spaces into an array
 void smallshCD();                   // handles change directory command inside smallsh
 void smallshStatus();               // handles exit command inside smallsh
+void ignoreSIGTSTP();
 
 /**
  *
@@ -90,8 +91,9 @@ void newChild(){
         }
         // code citation for all uses of dup2/redirection, exploration I/O https://canvas.oregonstate.edu/courses/1870063/pages/exploration-processes-and-i-slash-o?module_item_id=22026557
         case 0: {
-            if (backgroundFlag == 0){ // if child is a foreground process, must terminate on SIGINT
+            if (backgroundFlag == 0){ // if child is a foreground process, must terminate on SIGINT and ignore SIGTSTPgit
                 defaultSIGINT();
+                ignoreSIGTSTP();
             }
             char *localOutputName = outputFileName;
             char *localInputName = inputFileName;
@@ -447,27 +449,25 @@ void handleSIGTSTP(int signo){
     pid_t callingPid = getpid();
     if (callingPid == openPid[0] && ignoreBackground == 0){
         ignoreBackground = 1;
-        char * message = "Ignoring background process commands \n";
+        char * message = "\n Ignoring background process commands \n";
         write(STDOUT_FILENO, message, strlen(message));
     }
     else if (callingPid == openPid[0] && ignoreBackground == 1) {
         ignoreBackground = 0;
-        char *message = "Background commands restored \n";
+        char *message = "\n Background commands restored \n";
         write(STDOUT_FILENO, message, strlen(message));
     }
 }
 
+void ignoreSIGTSTP(){
+    struct sigaction SIGTSTPignore;
+    SIGTSTPignore.sa_handler = SIG_IGN;
+    sigfillset(&SIGTSTPignore.sa_mask);
+    SIGTSTPignore.sa_flags = 0;
+    sigaction(SIGTSTP, &SIGTSTPignore, NULL);
+}
 
-//void catchSIGTSTP(){
-//    struct sigaction SIGTSTPdefault;
-//    sigset_t block;
-//    sigemptyset(&block);
-//    SIGTSTPdefault.sa_handler = handleSIGTSTP;
-//    sigaddset(&block, SIGTSTP)
-//
-//    SIGTSTPdefault.sa_flags = SA_RESTART;
-//    sigaction(SIGTSTP, &SIGTSTPdefault, NULL);
-//}
+
 void catchSIGTSTP(){
     struct sigaction SIGTSTPdefault;
     SIGTSTPdefault.sa_handler = handleSIGTSTP;
