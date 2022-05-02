@@ -42,12 +42,7 @@ void smallshCD();                   // handles change directory command inside s
 void smallshStatus();               // handles exit command inside smallsh
 void ignoreSIGTSTP();
 
-/**
- *
- *
- *
- *
- */
+
 void newChild(){
     sigset_t baseMask, waitingMask;
     sigemptyset(&baseMask);
