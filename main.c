@@ -38,6 +38,10 @@ void handleSIGTSTP(int signo);      // handles the SIGTSTP to turn on/off backgr
 void catchSIGTSTP();                // catches a call of SIGTSTP and passes it to handleSIGTSTP
 void ignoreSIGINT();                // sets the response to SIGINT to ignore
 void defaultSIGINT();               // sets the response to SIGINT to terminate
+void parseUserInput();              // parses user input and delimits by spaces into an array
+void smallshCD();                   // handles change directory command inside smallsh
+void smallshStatus();               // handles exit command inside smallsh
+
 
 
 // TODO: split code into separate functions
@@ -258,6 +262,103 @@ void expandVar(char *command){
     free(str);
 }
 
+void parseUserInput(){
+    char *parsedInput;
+    parsedInput = strtok(inputBuff, " ");
+    int i = 0;
+    // split space separated user input into an array of string literals holding each argument
+    while (parsedInput != NULL){
+        if (strcmp(parsedInput, "<") == 0){
+            inputFlag ++;
+            parsedInput = strtok(NULL, " ");
+            continue;
+        }
+        if (strcmp(parsedInput, ">") == 0){
+            outputFlag ++;
+            parsedInput = strtok(NULL, " ");
+            continue;
+        }
+        if (inputFlag != 0){
+            inputFileName = parsedInput;
+            inputFlag = 0;
+            parsedInput = strtok(NULL, " ");
+            if (outputFlag == 0) {  // if only input redirection and no output redirection
+                continue;
+            }
+        }
+        if (outputFlag != 0){
+            outputFileName = parsedInput;
+            outputFlag = 0;
+            parsedInput = strtok(NULL, " ");
+            continue;
+        }
+        commandArgs[i] = parsedInput;
+        parsedInput = strtok(NULL, " ");
+        i++;
+        numCmds ++;
+    }
+}
+
+void smallshCD(){
+        if (numCmds> 2) {
+            perror("invalid number of arguments");
+            numCmds = 0;
+            memset(commandArgs, 0, sizeof(commandArgs));
+            return;
+        }
+        else if (numCmds == 2){
+            if (strcmp(commandArgs[1], "&") == 0){
+                commandArgs[1] = NULL;
+                goto cdHome;
+            }
+            int dir = chdir(commandArgs[1]);
+            if (dir != 0) {
+                perror("chdir error");
+                exit(1);
+            }
+            numCmds = 0;
+            memset(commandArgs, 0, sizeof(commandArgs));
+            return;
+        }
+        else {
+            cdHome:
+            {  // only cd was input by user or extranous &
+                char *home = getenv("HOME");
+                if (home == NULL) {
+                    perror("getenv error");
+                    exit(1);
+                }
+                int dir = chdir(home);
+
+                if (dir != 0) {
+                    perror("chdir error");
+                    exit(1);
+                }
+                numCmds = 0;
+                memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
+                return;
+            }
+        }
+}
+
+void smallshStatus(){
+    memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
+    if (childCalled == 0){
+        numCmds = 0;
+        return;
+    }
+    else{
+        int length = snprintf(NULL, 0, "%d", terminationStatus);  // find length of status
+        char *str = malloc(length + 1);
+        snprintf(str, length+1, "%d", terminationStatus);  // convert status to string with correct length
+        printf("exit value %s \n", str);
+        fflush(stdout);
+        free (str);
+        numCmds = 0;
+        return;
+    }
+}
+
 
 void shell() {
     while(1){
@@ -277,89 +378,19 @@ void shell() {
                 continue;
             }
         }
-        // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
         if (inputBuff[0] == '#' || inputBuff[0] == '\n'){
             continue;
         }
+        // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
         inputBuff[strcspn(inputBuff, "\n")] = 0;
         // check if variable expansion is needed for $$
         if (strstr(inputBuff, "$$")){
             expandVar(inputBuff);
         }
-        char *parsedInput;
-        parsedInput = strtok(inputBuff, " ");
-        int i = 0;
-        // split space separated user input into an array of string literals holding each argument
-        while (parsedInput != NULL){
-            if (strcmp(parsedInput, "<") == 0){
-                inputFlag ++;
-                parsedInput = strtok(NULL, " ");
-                continue;
-            }
-            if (strcmp(parsedInput, ">") == 0){
-                outputFlag ++;
-                parsedInput = strtok(NULL, " ");
-                continue;
-            }
-            if (inputFlag != 0){
-                inputFileName = parsedInput;
-                inputFlag = 0;
-                parsedInput = strtok(NULL, " ");
-                if (outputFlag == 0) {  // if only input redirection and no output redirection
-                    continue;
-                }
-            }
-            if (outputFlag != 0){
-                outputFileName = parsedInput;
-                outputFlag = 0;
-                parsedInput = strtok(NULL, " ");
-                continue;
-            }
-            commandArgs[i] = parsedInput;
-            parsedInput = strtok(NULL, " ");
-            i++;
-            numCmds ++;
-        }
+        parseUserInput();  // parse user input and separate into an array of commands
         if (strcmp(commandArgs[0], "cd") == 0) {
-            if (numCmds> 2) {
-                perror("invalid number of arguments");
-                numCmds = 0;
-                memset(commandArgs, 0, sizeof(commandArgs));
-                continue;
-            }
-            else if (numCmds == 2){
-                if (strcmp(commandArgs[1], "&") == 0){
-                    commandArgs[1] = NULL;
-                    goto cdHome;
-                }
-                int dir = chdir(commandArgs[1]);
-                if (dir != 0) {
-                    perror("chdir error");
-                    exit(1);
-                }
-                numCmds = 0;
-                memset(commandArgs, 0, sizeof(commandArgs));
-                continue;
-            }
-            else {
-                cdHome:
-                {  // only cd was input by user or extranous &
-                    char *home = getenv("HOME");
-                    if (home == NULL) {
-                        perror("getenv error");
-                        exit(1);
-                    }
-                    int dir = chdir(home);
-
-                    if (dir != 0) {
-                        perror("chdir error");
-                        exit(1);
-                    }
-                    numCmds = 0;
-                    memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
-                    continue;
-                }
-            }
+            smallshCD();
+            continue;
         }
             // starting from last child process, kill all including parent and exit smallsh
         if (strcmp(commandArgs[0], "exit") == 0) {
@@ -368,21 +399,8 @@ void shell() {
             }
         }
         if (strcmp(commandArgs[0], "status") == 0){
-            memset(commandArgs, 0, sizeof(commandArgs)); //clear buffer
-            if (childCalled == 0){
-                numCmds = 0;
-                continue;
-            }
-            else{
-                int length = snprintf(NULL, 0, "%d", terminationStatus);  // find length of status
-                char *str = malloc(length + 1);
-                snprintf(str, length+1, "%d", terminationStatus);  // convert status to string with correct length
-                printf("exit value %s \n", str);
-                fflush(stdout);
-                free (str);
-                numCmds = 0;
-                continue;
-            }
+            smallshStatus();
+            continue;
         }
         if (numCmds > 1) {
             if (strcmp(commandArgs[numCmds - 1], "&") == 0) {
@@ -442,7 +460,7 @@ int main() {
     ignoreSIGINT();  // parent process will ignore SIGINT
     openPid[0] = getpid();
     shell();  //start smallsh and parse arguments
-    cleanUpBackground();
+    cleanUpBackground(); // cleanup any remaining background arguments
     return 0;
 }
 
