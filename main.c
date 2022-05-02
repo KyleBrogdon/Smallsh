@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 #include <fcntl.h>
+#include <stddef.h>
 
 
 #define  MAX_LEN      2048 // max length of user commands
@@ -47,6 +48,9 @@ void smallshStatus();               // handles exit command inside smallsh
  *
  */
 void newChild(){
+    sigset_t baseMask, waitingMask;
+    sigemptyset(&baseMask);
+    sigaddset(&baseMask, SIGTSTP);
     childCalled = 1;
     char *argsToRun[numCmds+1];
     int sourceFD;
@@ -61,6 +65,7 @@ void newChild(){
     pid_t spawnPid = -5;
     int childStatus;
     //fork new process
+    sigprocmask(SIG_SETMASK, &baseMask, NULL);
     spawnPid = fork();
     if(spawnPid > 0) {
         numProcesses++;
@@ -164,6 +169,8 @@ void newChild(){
                 spawnPid = waitpid(spawnPid, &childStatus, 0);
                 openPid[numProcesses - 1] = '\0';
                 numProcesses--;
+                sigpending(&waitingMask);
+                if (sigismember(&waitingMask, SIGTSTP));
                 if (WIFEXITED(childStatus)) {
                     terminationStatus = WEXITSTATUS(childStatus);
                     if (terminationStatus != 0) {
@@ -450,6 +457,17 @@ void handleSIGTSTP(int signo){
     }
 }
 
+
+//void catchSIGTSTP(){
+//    struct sigaction SIGTSTPdefault;
+//    sigset_t block;
+//    sigemptyset(&block);
+//    SIGTSTPdefault.sa_handler = handleSIGTSTP;
+//    sigaddset(&block, SIGTSTP)
+//
+//    SIGTSTPdefault.sa_flags = SA_RESTART;
+//    sigaction(SIGTSTP, &SIGTSTPdefault, NULL);
+//}
 void catchSIGTSTP(){
     struct sigaction SIGTSTPdefault;
     SIGTSTPdefault.sa_handler = handleSIGTSTP;
