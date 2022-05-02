@@ -97,6 +97,7 @@ void shell() {
         // remove new line from input with strcspn, code citation: https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input
         inputBuff[strcspn(inputBuff, "\n")] = 0;
         // check if variable expansion is needed for $$
+        // code citation strstr: https://www.tutorialspoint.com/c_standard_library/c_function_strstr.htm
         if (strstr(inputBuff, "$$")){
             expandVar(inputBuff);
         }
