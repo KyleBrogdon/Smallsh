@@ -2,7 +2,6 @@
 
 A custom shell that can handle user inputs, perform variable expansion, navigate directories and file folders, fork processes to handle standard commands (both background and foreground execution), redirect input/output, and handle signals.
 
-!
 
 ## Getting Started
 
